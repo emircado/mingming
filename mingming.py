@@ -5,19 +5,22 @@ import socket
 
 class mingming:
 	def __init__(self):
-		self.__name = input('What is your name? ')
+		name = raw_input('What is your name? (input -1 to skip)')
+		if name != '-1':
+			self.__name = name
+	
 		self.__main_menu()
 
 	def __create_game(self):
 		port = int(raw_input('Enter port number: '))
 		print 'creating game...'
-		mingserver.mingserver(self.__name, self.__get_ip(), port)
+		mingserver.mingserver(self.__get_ip(), port, self.__name)
 
 	def __join_game(self):
 		host = raw_input('Enter IP Address: ')
 		port = int(raw_input('Enter port number: '))
 		print 'joining game...'
-		mingclient.mingclient(self.__name, host, port)
+		mingclient.mingclient(host, port, self.__name)
 
 	def __get_ip(self):
 		return socket.gethostbyname(socket.gethostname())
@@ -29,19 +32,19 @@ class mingming:
 		print 'YAP, Sharmaine'
 
 		print 'Enter 1 to go back'
-		cmd = input()
+		cmd = int(raw_input())
 
 		if cmd == 1:
 			self.__main_menu()
 
 	def __main_menu(self):
-		print 'Hello '+self.name
-		print 'Ming Ming '+self.get_ip()
+		print 'Hello '+self.__name
+		print 'Ming Ming '+self.__get_ip()
 		print 'Choose a command'
 		print '1) Create game'
 		print '2) Join game'
 		print '3) About game'
-		cmd = input()
+		cmd = int(raw_input())
 
 		if cmd == 1:
 			self.__create_game()

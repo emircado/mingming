@@ -7,8 +7,13 @@ import Tkinter
 import tkSimpleDialog
 
 class mingclient:
-	def __init__(self, name, host, port):
+	def __init__(self, host, port, name = ''):
 		try:
+			#problem set requirements
+			self.alias = name
+			self.id = -1
+
+			#other fields
 			self.__clientsocket = socket.socket()
 			self.__clientconnection = connection.connection(self.__clientsocket)
 
@@ -19,6 +24,7 @@ class mingclient:
 			#thread stoppers
 			self.__temp = threading.Event()
 			self.__waiting = threading.Event()
+			self.__server = threading.Event()
 
 			self.__join_game()
 		except Exception as e:
@@ -36,12 +42,36 @@ class mingclient:
 
 	def __leave_room(self):
 		print 'Leaving room...'
-		self.__clientconnection.sendMessage("LEAVE")
-
+		self.__clientconnection.sendMessage("LEAVE "+str(self.id))
 
 		#stop socket and threads
 		self.__clientsocket.close()
 		self.__temp.set()
+		self.__waiting.set()
+		self.__server.set()
+
+	def __servermsgs(self):
+		while not self.__server.is_set():
+			message = self.__clientconnection.getMessage()
+		
+			#connected to server successfully (like an ACK)
+			if message.startswith('SETID'):
+				clientid = int(message[6:])
+				if clientid == -1:
+					print 'server is full!'
+				else:
+					self.id = clientid
+					print 'identifier is '+str(clientid)
+
+			#certain client left room
+			elif message.startswith('LEFT'):
+				print 'client '+message[5:]+'has left the room'
+
+			#others
+			else:
+				print message
+
+		print 'done receiving messages from server'
 
 	def __join_game(self):
 		#for game events (leave server, ...)
@@ -49,5 +79,6 @@ class mingclient:
 		tempthread.start()
 
 		#get server messages
-
+		fromserver = threading.Thread(target = self.__servermsgs)
+		fromserver.start()
 		
