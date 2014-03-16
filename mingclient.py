@@ -7,10 +7,10 @@ import Tkinter
 import tkSimpleDialog
 
 class mingclient:
-	def __init__(self, host, port, name = ''):
+	def __init__(self, host, port, alias):
 		try:
 			#problem set requirements
-			self.alias = name
+			self.alias = alias
 			self.id = -1
 
 			#other fields
@@ -23,10 +23,13 @@ class mingclient:
 
 			#thread stoppers
 			self.__temp = threading.Event()
-			self.__waiting = threading.Event()
 			self.__server = threading.Event()
 
+			#start threads
 			self.__join_game()
+
+			#give alias to server
+			self.__clientconnection.sendMessage('SET_ALIAS '+alias)
 		except Exception as e:
 			traceback.print_exc()
 
@@ -37,18 +40,22 @@ class mingclient:
 			message = message.strip()
 
 			if message == 'LEAVE':
-				self.__leave_room()
+				self.__exit_room('LEAVE')
 		print 'done getting client inputs'
 
-	def __leave_room(self):
-		print 'Leaving room...'
-		self.__clientconnection.sendMessage("LEAVE "+str(self.id))
+	#the client either leaves or is kicked out of the room
+	def __exit_room(self, means):
+		if means == 'LEAVE':
+			print 'Leaving room...'
+			self.__clientconnection.sendMessage("LEAVE "+str(self.id))
+
+		elif means == 'KICK':
+			print 'You have been kicked out of the room.'
 
 		#stop socket and threads
-		self.__clientsocket.close()
 		self.__temp.set()
-		self.__waiting.set()
 		self.__server.set()
+		self.__clientsocket.close()
 
 	def __servermsgs(self):
 		while not self.__server.is_set():
@@ -57,28 +64,35 @@ class mingclient:
 			#connected to server successfully (like an ACK)
 			if message.startswith('SETID'):
 				clientid = int(message[6:])
+				#waiting area is full
 				if clientid == -1:
 					print 'server is full!'
+				#players are currently playing
+				elif clientid == -2:
+					print 'A game is currently happening.'
+				#successful entry
 				else:
 					self.id = clientid
 					print 'identifier is '+str(clientid)
 
 			#certain client left room
 			elif message.startswith('LEFT'):
-				print 'client '+message[5:]+'has left the room'
+				print 'client '+message[5:]+' has left the room'
 
-			#others
-			else:
-				print message
+			#certain client kicked out of room
+			elif message.startswith('KICK'):
+				#kicked out of room
+				if int(message[5:]) == self.id:
+					self.__exit_room('KICK')
+				else:
+					print 'client '+message[5:]+' has been kicked out of the room'
 
 		print 'done receiving messages from server'
 
 	def __join_game(self):
 		#for game events (leave server, ...)
-		tempthread = threading.Thread(target = self.__tempfunc_playerevt)
-		tempthread.start()
+		threading.Thread(target = self.__tempfunc_playerevt).start()
 
 		#get server messages
-		fromserver = threading.Thread(target = self.__servermsgs)
-		fromserver.start()
+		threading.Thread(target = self.__servermsgs).start()
 		
