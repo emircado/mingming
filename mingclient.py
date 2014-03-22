@@ -44,6 +44,7 @@ class mingclient:
 			#leave room
 			if message == 'LEAVE':
 				self.__exit_room('LEAVE')
+
 			#toggle ready status
 			elif message == 'READY':
 				self.__ready = False if self.__ready == True else True
@@ -79,6 +80,7 @@ class mingclient:
 				#players are currently playing
 				elif clientid == -2:
 					print 'A game is currently happening.'
+					self.__exit_room()
 				#successful entry
 				else:
 					self.id = clientid

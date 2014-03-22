@@ -16,6 +16,7 @@ class mingserver:
 			self.__idctr = 1
 			self.__plist = [0, None, None, None]
 			self.__pready = [False, None, None, None]
+			self.__playing = False
 
 			#other fields
 			self.host = host
@@ -59,6 +60,7 @@ class mingserver:
 				elif False in self.__pready:
 					print 'Not all players are ready' 
 				else:
+					self.__playing = True
 					print 'Starting game!'
 			
 			#kick client out of game
@@ -128,34 +130,41 @@ class mingserver:
 			remote_socket, addr = self.__serversocket.accept()
 			remote_connection = connection.connection(remote_socket)
 			
-			#determine if room is full
-			ind = -1
-			for i in range(len(self.__plist)):
-				if self.__plist[i] == None:
-					ind = i
-					break
-
-			#room is full
-			if ind == -1:
-				remote_connection.sendMessage('SETID -1')
+			#room is busy
+			if self.__playing:
+				remote_connection.sendMessage('SETID -2')
 				remote_socket.close()
-			#room can accommodate
+
 			else:
-				#add identifier to client
-				remote_connection.sendMessage('SETID '+str(self.__idctr))
-				self.__players.update({self.__idctr: (addr, remote_connection, threading.Event())})
+				#determine if room is full
+				ind = -1
+				for i in range(len(self.__plist)):
+					if self.__plist[i] == None:
+						ind = i
+						break
 
-				#add to list of players
-				self.__plist[ind] = self.__idctr
-				self.__pready[ind] = False	
+				#room is full
+				if ind == -1:
+					remote_connection.sendMessage('SETID -1')
+					remote_socket.close()
 
-				#receive client messages
-				msg_thread = threading.Thread(target = self.__clientmsgs, args = (self.__idctr,))
-				msg_thread.start()
+				#room can accommodate
+				else:
+					#add identifier to client
+					remote_connection.sendMessage('SETID '+str(self.__idctr))
+					self.__players.update({self.__idctr: (addr, remote_connection, threading.Event())})
 
-				print(str(addr) + ' connected! '+str(self.__idctr))
-				self.__playercount+=1
-				self.__idctr+=1
+					#add to list of players
+					self.__plist[ind] = self.__idctr
+					self.__pready[ind] = False	
+
+					#receive client messages
+					msg_thread = threading.Thread(target = self.__clientmsgs, args = (self.__idctr,))
+					msg_thread.start()
+
+					print(str(addr) + ' connected! '+str(self.__idctr))
+					self.__playercount+=1
+					self.__idctr+=1
 
 		print 'done waiting for players'
 
