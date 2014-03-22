@@ -5,7 +5,7 @@ import socket
 
 class mingming:
 	def __init__(self):
-		self.__alias = raw_input('What is your name? (input -1 to skip)')
+		self.__alias = raw_input('What is your name? (input -1 to skip)').replace(',','').replace(':','')
 		self.__main_menu()
 
 	def __create_game(self):

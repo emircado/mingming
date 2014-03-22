@@ -12,7 +12,10 @@ class mingserver:
 			#problem set requirements
 			self.id = 0
 			self.alias = alias
+			
 			self.__idctr = 1
+			self.__plist = [0, None, None, None]
+			self.__pready = [False, None, None, None]
 
 			#other fields
 			self.host = host
@@ -65,21 +68,43 @@ class mingserver:
 		if toremove in self.__players:
 			#close connection + stop thread of client to remove
 			addr, connection, stopper, alias = self.__players[toremove]
-			connection.sendMessage('KICK '+clientid)
+			if means == 'KICK':
+				connection.sendMessage('KICK '+clientid)
 			connection.mySocket.close()
 			stopper.set()
 			self.__playercount-=1
+
 			del self.__players[toremove]
+			for i in range(len(self.__plist)):
+				if self.__plist[i] == toremove:
+					self.__plist[i] = None
+					self.__pready[i] = None
+					break
 
 			#inform other clients that player has been removed
-			for cid in self.__players:
-				addr, connection, stopper, alias = self.__players[cid]
-				if means == 'LEFT':
-					connection.sendMessage('LEFT '+clientid)
-				elif means == 'KICK':
-					connection.sendMessage('KICK '+clientid)
+			if means == 'LEFT':
+				self.__sendmsg_toall('LEFT '+clientid)
+			elif means == 'KICK':
+				self.__sendmsg_toall('KICK '+clientid)
+			self.__update_players()
 		else:
 			print 'player to remove not found'
+
+	#send player status to clients
+	def __update_players(self):
+		message = 'PLAYERS '+str(self.__pready[0])+':'+str(self.id)+':'+str(self.alias)+', '
+		for i in range(1, len(self.__plist)):
+			message+=str(self.__pready[i])
+
+			if self.__plist[i] == None:
+				message+=':None:None'
+			else:
+				message+=':'+str(self.__plist[i])+':'+str(self.__players[self.__plist[i]][3])
+			
+			if i+1 != len(self.__plist):
+				message+=', '
+
+		self.__sendmsg_toall(message)
 
 	#handles clients connecting to server
 	def __wait_for_players(self):
@@ -87,17 +112,34 @@ class mingserver:
 			remote_socket, addr = self.__serversocket.accept()
 			remote_connection = connection.connection(remote_socket)
 			
-			#add identifier to client
-			remote_connection.sendMessage('SETID '+str(self.__idctr))
-			self.__players.update({self.__idctr: (addr, remote_connection, threading.Event())})
+			#determine if room is full
+			ind = -1
+			for i in range(len(self.__plist)):
+				if self.__plist[i] == None:
+					ind = i
+					break
 
-			#receive client messages
-			msg_thread = threading.Thread(target = self.__clientmsgs, args = (self.__idctr,))
-			msg_thread.start()
+			#room is full
+			if ind == -1:
+				remote_connection.sendMessage('SETID -1')
+				remote_socket.close()
+			#room can accommodate
+			else:
+				#add identifier to client
+				remote_connection.sendMessage('SETID '+str(self.__idctr))
+				self.__players.update({self.__idctr: (addr, remote_connection, threading.Event())})
 
-			print(str(addr) + ' connected! '+str(self.__idctr))
-			self.__playercount+=1
-			self.__idctr+=1
+				#add to list of players
+				self.__plist[ind] = self.__idctr
+				self.__pready[ind] = False	
+
+				#receive client messages
+				msg_thread = threading.Thread(target = self.__clientmsgs, args = (self.__idctr,))
+				msg_thread.start()
+
+				print(str(addr) + ' connected! '+str(self.__idctr))
+				self.__playercount+=1
+				self.__idctr+=1
 
 		print 'done waiting for players'
 
@@ -116,11 +158,15 @@ class mingserver:
 				self.__players[cid] = self.__players[cid]+(message[10:],)
 				print 'client '+str(cid)+' alias set to '+message[10:]
 
+				self.__update_players()
+			
 		print 'done accommodating client '+str(cid)
 
 	def __sendmsg_toall(self, msg):
-		for skt, addr, con in self.__players:
-			con.sendMessage(msg)
+		for cid in self.__players:
+			addr, connection, stopper, alias = self.__players[cid]
+
+			connection.sendMessage(msg)
 
 	def __host_room(self):
 		self.__serversocket.listen(5)

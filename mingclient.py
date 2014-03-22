@@ -13,6 +13,8 @@ class mingclient:
 			self.alias = alias
 			self.id = -1
 
+			self.__ready = False
+
 			#other fields
 			self.__clientsocket = socket.socket()
 			self.__clientconnection = connection.connection(self.__clientsocket)
@@ -44,7 +46,7 @@ class mingclient:
 		print 'done getting client inputs'
 
 	#the client either leaves or is kicked out of the room
-	def __exit_room(self, means):
+	def __exit_room(self, means = None):
 		if means == 'LEAVE':
 			print 'Leaving room...'
 			self.__clientconnection.sendMessage("LEAVE "+str(self.id))
@@ -67,6 +69,7 @@ class mingclient:
 				#waiting area is full
 				if clientid == -1:
 					print 'server is full!'
+					self.__exit_room()
 				#players are currently playing
 				elif clientid == -2:
 					print 'A game is currently happening.'
@@ -74,6 +77,13 @@ class mingclient:
 				else:
 					self.id = clientid
 					print 'identifier is '+str(clientid)
+
+			#recieve player list
+			elif message.startswith('PLAYERS'):
+				print message
+				for ready, pid, palias in [x.split(':') for x in message[8:].split(', ')]:
+					print ready, pid, palias
+				#UPDATE FRONTEND DISPLAYS HERE
 
 			#certain client left room
 			elif message.startswith('LEFT'):
@@ -86,6 +96,8 @@ class mingclient:
 					self.__exit_room('KICK')
 				else:
 					print 'client '+message[5:]+' has been kicked out of the room'
+
+
 
 		print 'done receiving messages from server'
 
