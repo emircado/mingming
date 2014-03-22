@@ -41,15 +41,21 @@ class mingclient:
 			message = tkSimpleDialog.askstring('Input', 'Enter input')
 			message = message.strip()
 
+			#leave room
 			if message == 'LEAVE':
 				self.__exit_room('LEAVE')
+			#toggle ready status
+			elif message == 'READY':
+				self.__ready = False if self.__ready == True else True
+				self.__clientconnection.sendMessage('READY '+str(self.id)+' '+str(self.__ready))
+
 		print 'done getting client inputs'
 
 	#the client either leaves or is kicked out of the room
 	def __exit_room(self, means = None):
 		if means == 'LEAVE':
 			print 'Leaving room...'
-			self.__clientconnection.sendMessage("LEAVE "+str(self.id))
+			self.__clientconnection.sendMessage('LEAVE '+str(self.id))
 
 		elif means == 'KICK':
 			print 'You have been kicked out of the room.'
@@ -96,8 +102,6 @@ class mingclient:
 					self.__exit_room('KICK')
 				else:
 					print 'client '+message[5:]+' has been kicked out of the room'
-
-
 
 		print 'done receiving messages from server'
 

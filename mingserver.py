@@ -42,10 +42,26 @@ class mingserver:
 			message = tkSimpleDialog.askstring('Input', 'Enter input')
 			message = message.strip()
 
+			#quit game (leave room)
 			if message == 'QUIT':
 				self.__leave_room()
+
+			#ready to play
+			elif message == 'READY':
+				self.__pready[0] = False if self.__pready[0] else True
+				self.__update_players()
+			
+			#start game
 			elif message == 'START':
-				print 'Starting game!'
+				print 'Attempting to start game...'
+				if len(self.__players) == 0:
+					print 'Can\'t play with only one player'
+				elif False in self.__pready:
+					print 'Not all players are ready' 
+				else:
+					print 'Starting game!'
+			
+			#kick client out of game
 			elif message.startswith('KICK '):
 				self.__remove_player(message[5:], 'KICK')
 		print 'done getting inputs'
@@ -159,7 +175,21 @@ class mingserver:
 				print 'client '+str(cid)+' alias set to '+message[10:]
 
 				self.__update_players()
-			
+
+			#set to ready
+			elif message.startswith('READY'):
+				print message
+				a, pid, pready = message.split(' ')
+				print pid, pready
+				for i in range(len(self.__plist)):
+					if self.__plist[i] == int(pid):
+						self.__pready[i] = True if pready == 'True' else False
+						break
+
+				print self.__pready
+				self.__update_players()
+				#UPDATE GRAHPICS HERE
+
 		print 'done accommodating client '+str(cid)
 
 	def __sendmsg_toall(self, msg):
