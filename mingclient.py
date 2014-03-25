@@ -27,11 +27,12 @@ class mingclient:
 			self.__temp = threading.Event()
 			self.__server = threading.Event()
 
-			#start threads
-			self.__join_game()
+			#start client
+			self.__start_client()
 
 			#give alias to server
 			self.__clientconnection.sendMessage('SET_ALIAS '+alias)
+
 		except Exception as e:
 			traceback.print_exc()
 
@@ -107,10 +108,9 @@ class mingclient:
 
 		print 'done receiving messages from server'
 
-	def __join_game(self):
+	def __start_client(self):
 		#for game events (leave server, ...)
 		threading.Thread(target = self.__tempfunc_playerevt).start()
-
+		
 		#get server messages
 		threading.Thread(target = self.__servermsgs).start()
-		
