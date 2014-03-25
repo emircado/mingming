@@ -7,6 +7,10 @@ import socket
 import pygame, sys, os, string
 from pygame.locals import *
 
+#TEMPORARY IMPORTS
+import Tkinter
+import tkSimpleDialog
+
 BLACK     = pygame.Color(   0,   0,   0)
 WHITE     = pygame.Color( 255, 255, 255)
 GREEN     = pygame.Color(   0, 255,   0)
@@ -25,7 +29,7 @@ class mingming:
 		pygame.display.set_caption("Ming Ming")
 
 		os.environ['SDL_VIDEO_CENTERED'] = '1'
-		self.font = pygame.font.Font("resources/ThrowMyHandsUpintheAir.ttf", 35)
+		self.font = pygame.font.Font(None, 35)
 
 		self.__prepare_images()
 
@@ -74,23 +78,29 @@ class mingming:
 			self.screen.blit(self.__images['main']['button_about'], (582,492)),
 			self.screen.blit(self.__images['main']['button_howto'], (413,492))	)
 
-		print self.__get_ip()
+		#display user alias
+		welcome = self.font.render("NI HAO "+self.__alias, True, WHITE)
+		self.screen.blit(welcome, (50,50))
+		myip = self.font.render(self.__get_ip(), True, WHITE)
+		self.screen.blit(myip, (10, 570))
 
 	def create_game(self):
 		self.__on_display = 'host'
 
-		# port = int(raw_input('Enter port number: '))
-		port = 8080
+		Tkinter.Tk().withdraw()
+		port = int(tkSimpleDialog.askstring('Input', 'Enter port number').strip())
+
 		print 'creating game...'
 		mingserver.mingserver(self.__get_ip(), port, string.join(self.__alias,""))
 
 	def join_game(self):
 		self.__on_display = 'join'
 
-		# host = raw_input('Enter IP Address: ')
-		# port = int(raw_input('Enter port number: '))
-		host = self.__get_ip()
-		port = 8080
+		Tkinter.Tk().withdraw()
+		host = tkSimpleDialog.askstring('Input', 'Enter IP Address').strip()
+		Tkinter.Tk().withdraw()
+		port = int(tkSimpleDialog.askstring('Input', 'Enter port number').strip())
+
 		print 'joining game...'
 		mingclient.mingclient(host, port, self.__alias)
 
@@ -136,7 +146,7 @@ class mingming:
 							if b.collidepoint(pygame.mouse.get_pos()):
 								#arrow next
 								if i == 0:
-									#GET NAME HERE
+									self.__alias = string.join(self.__alias, "")
 									self.main_menu()
 
 					#input field
@@ -145,7 +155,7 @@ class mingming:
 							self.__alias = self.__alias[:-1]
 							self.who_you()
 						elif event.key == K_RETURN:
-							#GET NAME HERE
+							self.__alias = string.join(self.__alias, "")
 							self.main_menu()
 						else:
 							#20 characters limit
@@ -200,11 +210,11 @@ class mingming:
 				
 				#HOST GAME SCREEN EVENTS
 				elif self.__on_display == 'host':
-					print 'IN HOST'
+					pass
 
 				#JOIN GAME SCREEN EVENTS
 				elif self.__on_display == 'join':
-					print 'IN JOIN'
+					pass
 
 			pygame.display.update()
 			self.clock.tick(100)
