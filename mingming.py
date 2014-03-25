@@ -4,7 +4,7 @@ import mingclient
 import socket
 
 #FRONTEND IMPORTS
-import pygame, sys, os
+import pygame, sys, os, string
 from pygame.locals import *
 
 BLACK     = pygame.Color(   0,   0,   0)
@@ -16,6 +16,8 @@ LIGHTGRAY = pygame.Color( 200, 191, 231)
 
 class mingming:
 	def __init__(self):
+		self.__alias = []
+
 		pygame.init()
 		self.clock = pygame.time.Clock()
 
@@ -23,43 +25,43 @@ class mingming:
 		pygame.display.set_caption("Ming Ming")
 
 		os.environ['SDL_VIDEO_CENTERED'] = '1'
-		self.font = pygame.font.Font(None, 35)
+		self.font = pygame.font.Font("resources/ThrowMyHandsUpintheAir.ttf", 35)
 
 		self.__prepare_images()
 
 	#preload all images needed
 	def __prepare_images(self):
 		self.__images = {	
-			'about':	{	'background': 	pygame.image.load("images/about/about_background.png")	},
+			'about':	{	'background': 	pygame.image.load("resources/about/about_background.png")	},
 			
-			'main': 	{	'background':	pygame.image.load("images/main/main_background.png"),
-							'button_about':	pygame.image.load("images/main/main_button_about.png").convert_alpha(),
-							'button_host':	pygame.image.load("images/main/main_button_host.png").convert_alpha(),
-							'button_join':	pygame.image.load("images/main/main_button_join.png").convert_alpha(),
-							'button_howto':	pygame.image.load("images/main/main_button_howto.png").convert_alpha()	},
+			'main': 	{	'background':	pygame.image.load("resources/main/main_background.png"),
+							'button_about':	pygame.image.load("resources/main/main_button_about.png").convert_alpha(),
+							'button_host':	pygame.image.load("resources/main/main_button_host.png").convert_alpha(),
+							'button_join':	pygame.image.load("resources/main/main_button_join.png").convert_alpha(),
+							'button_howto':	pygame.image.load("resources/main/main_button_howto.png").convert_alpha()	},
 
-			'arrows':	{	'button_next':	pygame.image.load("images/arrows/arrow_next.png").convert_alpha(),
-							'button_dnext':	pygame.image.load("images/arrows/arrow_next_no.png").convert_alpha(),
-							'button_prev':	pygame.image.load("images/arrows/arrow_prev.png").convert_alpha(),
-							'button_dprev':	pygame.image.load("images/arrows/arrow_prev_no.png").convert_alpha()	},
+			'arrows':	{	'button_next':	pygame.image.load("resources/arrows/arrow_next.png").convert_alpha(),
+							'button_dnext':	pygame.image.load("resources/arrows/arrow_next_no.png").convert_alpha(),
+							'button_prev':	pygame.image.load("resources/arrows/arrow_prev.png").convert_alpha(),
+							'button_dprev':	pygame.image.load("resources/arrows/arrow_prev_no.png").convert_alpha()	},
 
-			'whoyou':	{	'background':	pygame.image.load("images/whoyou/whoyou_background.png")	},
+			'whoyou':	{	'background':	pygame.image.load("resources/whoyou/whoyou_background.png")	},
 
-			'howto':	{	'page1':		pygame.image.load("images/howto/howto_page1.png"),
-							'page2':		pygame.image.load("images/howto/howto_page2.png")	}
+			'howto':	{	'page1':		pygame.image.load("resources/howto/howto_page1.png"),
+							'page2':		pygame.image.load("resources/howto/howto_page2.png")	}
 		}
 
 	def who_you(self):
 		self.__on_display = 'whoyou'
 		#self.__alias = raw_input('What is your name? (input -1 to skip)').replace(',','').replace(':','')
-		self.__alias = "Emir"
 
 		self.screen.fill(BLACK)
 		self.screen.blit(self.__images['whoyou']['background'], (0,0))
 		self.__active_buttons = (
 			self.screen.blit(self.__images['arrows']['button_next'], (631,491)),	)
 
-		# self.main_menu()
+		name = self.font.render(string.join(self.__alias, ""), True, BLACK)
+		self.screen.blit(name, (430, 285))
 
 	def main_menu(self):
 		self.__on_display = 'main'
@@ -80,7 +82,7 @@ class mingming:
 		# port = int(raw_input('Enter port number: '))
 		port = 8080
 		print 'creating game...'
-		mingserver.mingserver(self.__get_ip(), port, self.__alias)
+		mingserver.mingserver(self.__get_ip(), port, string.join(self.__alias,""))
 
 	def join_game(self):
 		self.__on_display = 'join'
@@ -134,7 +136,23 @@ class mingming:
 							if b.collidepoint(pygame.mouse.get_pos()):
 								#arrow next
 								if i == 0:
+									#GET NAME HERE
 									self.main_menu()
+
+					#input field
+					elif event.type == KEYDOWN:
+						if event.key == K_BACKSPACE:
+							self.__alias = self.__alias[:-1]
+							self.who_you()
+						elif event.key == K_RETURN:
+							#GET NAME HERE
+							self.main_menu()
+						else:
+							#20 characters limit
+							if len(self.__alias) < 21:
+								self.__alias.append(event.unicode)
+							self.who_you()
+
 
 				#MAIN SCREEN EVENTS
 				elif self.__on_display == 'main':
