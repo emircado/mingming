@@ -33,47 +33,18 @@ class mingserver:
 			self.__temp = threading.Event()
 			self.__waiting = threading.Event()
 
-			self.__host_room()
+			#start server
+			self.__start_server()
+			
 		except Exception as e:
 			traceback.print_exc()
 
-	def __tempfunc_roomevt(self):
-		while not self.__temp.is_set():
-			Tkinter.Tk().withdraw()
-			message = tkSimpleDialog.askstring('Input', 'Enter input')
-			message = message.strip()
-
-			#quit game (leave room)
-			if message == 'QUIT':
-				self.__leave_room()
-
-			#ready to play
-			elif message == 'READY':
-				self.__pready[0] = False if self.__pready[0] else True
-				self.__update_players()
-			
-			#start game
-			elif message == 'START':
-				print 'Attempting to start game...'
-				if len(self.__players) == 0:
-					print 'Can\'t play with only one player'
-				elif False in self.__pready:
-					print 'Not all players are ready' 
-				else:
-					self.__playing = True
-					print 'Starting game!'
-			
-			#kick client out of game
-			elif message.startswith('KICK '):
-				self.__remove_player(message[5:], 'KICK')
-		print 'done getting inputs'
-
-	def __leave_room(self):
+	def leave_room(self):
 		print 'Exiting game...'
 
 		#kick out all players from the room
 		for cid in self.__players.keys():
-			self.__remove_player(str(cid), 'KICK')
+			self.remove_player(str(cid), 'KICK')
 
 		#connect dummy to kill socket.accept()
 		self.__temp.set()
@@ -81,7 +52,21 @@ class mingserver:
 		socket.socket().connect((self.host, self.port))
 		self.__serversocket.close()
 
-	def __remove_player(self, clientid, means):
+	def set_ready(self):
+		self.__pready[0] = False if self.__pready[0] else True
+		self.__update_players()
+		
+	def start_game(self):
+		print 'Attempting to start game...'
+		if len(self.__players) == 0:
+			print 'Can\'t play with only one player'
+		elif False in self.__pready:
+			print 'Not all players are ready' 
+		else:
+			self.__playing = True
+			print 'Starting game!'
+
+	def remove_player(self, clientid, means):
 		toremove = int(clientid)
 		if toremove in self.__players:
 			#close connection + stop thread of client to remove
@@ -107,6 +92,30 @@ class mingserver:
 			self.__update_players()
 		else:
 			print 'player to remove not found'
+
+	#UI events
+	def __tempfunc_roomevt(self):
+		while not self.__temp.is_set():
+			Tkinter.Tk().withdraw()
+			message = tkSimpleDialog.askstring('Input', 'Enter input')
+			message = message.strip()
+
+			#quit game (leave room)
+			if message == 'QUIT':
+				self.leave_room()
+
+			#ready to play
+			elif message == 'READY':
+				self.set_ready()
+
+			#start game
+			elif message == 'START':
+				self.start_game()
+			
+			#kick client out of game
+			elif message.startswith('KICK '):
+				self.remove_player(message[5:], 'KICK')
+		print 'done getting inputs'
 
 	#send player status to clients
 	def __update_players(self):
@@ -176,7 +185,7 @@ class mingserver:
 			
 			#certain client leaves room
 			if message.startswith('LEAVE'):
-				self.__remove_player(message[6:], 'LEFT')
+				self.remove_player(message[6:], 'LEFT')
 
 			#set alias name
 			elif message.startswith('SET_ALIAS'):
@@ -207,11 +216,11 @@ class mingserver:
 
 			connection.sendMessage(msg)
 
-	def __host_room(self):
+	def __start_server(self):
 		self.__serversocket.listen(5)
-
+		
 		#for game events (quit, start, remove, ...)
 		threading.Thread(target = self.__tempfunc_roomevt).start()
-
+		
 		#wait for clients to join
 		threading.Thread(target = self.__wait_for_players).start()
