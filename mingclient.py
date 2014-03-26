@@ -12,7 +12,6 @@ class mingclient:
 			#problem set requirements
 			self.alias = alias
 			self.id = -1
-
 			self.__ready = False
 
 			#other fields
@@ -24,37 +23,37 @@ class mingclient:
 			print 'connected!!'
 
 			#thread stoppers
-			self.__temp = threading.Event()
+			# self.__temp = threading.Event()
 			self.__server = threading.Event()
 
 			#start client
-			self.__start_client()
-
-			#give alias to server
-			self.__clientconnection.sendMessage('SET_ALIAS '+alias)
+			threading.Thread(target = self.__servermsgs).start()
 
 		except Exception as e:
 			traceback.print_exc()
 
-	def __tempfunc_playerevt(self):
-		while not self.__temp.is_set():
-			Tkinter.Tk().withdraw()
-			message = tkSimpleDialog.askstring('Input', 'Enter input')
-			message = message.strip()
+	# def __tempfunc_playerevt(self):
+	# 	while not self.__temp.is_set():
+	# 		Tkinter.Tk().withdraw()
+	# 		message = tkSimpleDialog.askstring('Input', 'Enter input')
+	# 		message = message.strip()
 
-			#leave room
-			if message == 'LEAVE':
-				self.__exit_room('LEAVE')
+	# 		#leave room
+	# 		if message == 'LEAVE':
+	# 			self.exit_room('LEAVE')
 
-			#toggle ready status
-			elif message == 'READY':
-				self.__ready = False if self.__ready == True else True
-				self.__clientconnection.sendMessage('READY '+str(self.id)+' '+str(self.__ready))
+	# 		#toggle ready status
+	# 		elif message == 'READY':
+	# 			toggle_ready()
 
-		print 'done getting client inputs'
+	# 	print 'done getting client inputs'
+
+	def toggle_ready(self):
+		self.__ready = False if self.__ready == True else True
+		self.__clientconnection.sendMessage('READY '+str(self.id)+' '+str(self.__ready))
 
 	#the client either leaves or is kicked out of the room
-	def __exit_room(self, means = None):
+	def exit_room(self, means = None):
 		if means == 'LEAVE':
 			print 'Leaving room...'
 			self.__clientconnection.sendMessage('LEAVE '+str(self.id))
@@ -62,8 +61,16 @@ class mingclient:
 		elif means == 'KICK':
 			print 'You have been kicked out of the room.'
 
+		elif means == 'SERVER_FULL':
+			print 'The server is full.'
+
+		elif means == 'SERVER_BUSY':
+			print 'A game is currently happening.'
+
+		elif means == 'SERVER_LEFT':
+			print 'The server closed the room.'
+
 		#stop socket and threads
-		self.__temp.set()
 		self.__server.set()
 		self.__clientsocket.close()
 
@@ -71,21 +78,16 @@ class mingclient:
 		while not self.__server.is_set():
 			message = self.__clientconnection.getMessage()
 		
-			#connected to server successfully (like an ACK)
+			#connected to server successfully
 			if message.startswith('SETID'):
-				clientid = int(message[6:])
-				#waiting area is full
-				if clientid == -1:
-					print 'server is full!'
-					self.__exit_room()
-				#players are currently playing
-				elif clientid == -2:
-					print 'A game is currently happening.'
-					self.__exit_room()
-				#successful entry
-				else:
-					self.id = clientid
-					print 'identifier is '+str(clientid)
+				try:
+					self.id = int(message[6:])
+					print 'identifier is '+message[6:]
+
+					#give alias to server
+					self.__clientconnection.sendMessage('SET_ALIAS '+self.alias)
+				except ValueError:
+					self.exit_room(message[6:])
 
 			#recieve player list
 			elif message.startswith('PLAYERS'):
@@ -102,15 +104,8 @@ class mingclient:
 			elif message.startswith('KICK'):
 				#kicked out of room
 				if int(message[5:]) == self.id:
-					self.__exit_room('KICK')
+					self.exit_room('KICK')
 				else:
 					print 'client '+message[5:]+' has been kicked out of the room'
 
 		print 'done receiving messages from server'
-
-	def __start_client(self):
-		#for game events (leave server, ...)
-		threading.Thread(target = self.__tempfunc_playerevt).start()
-		
-		#get server messages
-		threading.Thread(target = self.__servermsgs).start()

@@ -33,6 +33,8 @@ class mingming:
 
 		self.__prepare_images()
 
+		self.__room_pcoor = [(400,100), (600,100), (400,400), (600,400)]
+
 	#preload all images needed
 	def __prepare_images(self):
 		self.__images = {	
@@ -52,19 +54,27 @@ class mingming:
 			'whoyou':	{	'background':	pygame.image.load("resources/whoyou/whoyou_background.png")	},
 
 			'howto':	{	'page1':		pygame.image.load("resources/howto/howto_page1.png"),
-							'page2':		pygame.image.load("resources/howto/howto_page2.png")	}
-		}
+							'page2':		pygame.image.load("resources/howto/howto_page2.png")	},
+			
+			'room':		{	'background':	pygame.image.load("resources/room/room_background.png"),
+							'btn_start':	pygame.image.load("resources/room/room_button_start.png").convert_alpha(),
+							'btn_nostart':	pygame.image.load("resources/room/room_button_nostart.png").convert_alpha(),
+							'btn_leave':	pygame.image.load("resources/room/room_button_leave.png").convert_alpha(),
+							'btn_kick':		pygame.image.load("resources/room/room_button_kick.png").convert_alpha(),
+							'vacant':		pygame.image.load("resources/room/room_vacant.png").convert_alpha(),
+							'user_ready':	pygame.image.load("resources/room/room_occ_ready.png").convert_alpha(),
+							'user_nready':	pygame.image.load("resources/room/room_occ_notready.png").convert_alpha()	}
+			}
 
 	def who_you(self):
 		self.__on_display = 'whoyou'
-		#self.__alias = raw_input('What is your name? (input -1 to skip)').replace(',','').replace(':','')
 
 		self.screen.fill(BLACK)
 		self.screen.blit(self.__images['whoyou']['background'], (0,0))
 		self.__active_buttons = (
 			self.screen.blit(self.__images['arrows']['button_next'], (631,491)),	)
 
-		name = self.font.render(string.join(self.__alias, ""), True, BLACK)
+		name = self.font.render(string.join(self.__alias, "").replace(',','').replace(':',''), True, BLACK)
 		self.screen.blit(name, (430, 285))
 
 	def main_menu(self):
@@ -84,14 +94,39 @@ class mingming:
 		myip = self.font.render(self.__get_ip(), True, WHITE)
 		self.screen.blit(myip, (10, 570))
 
-	def create_game(self):
+	def create_game(self, new = False):
 		self.__on_display = 'host'
 
-		Tkinter.Tk().withdraw()
-		port = int(tkSimpleDialog.askstring('Input', 'Enter port number').strip())
+		if new == True:
+			Tkinter.Tk().withdraw()
+			port = int(tkSimpleDialog.askstring('Input', 'Enter port number').strip())
+			self.__server = mingserver.mingserver(self.__get_ip(), port, string.join(self.__alias,""))
 
-		print 'creating game...'
-		mingserver.mingserver(self.__get_ip(), port, string.join(self.__alias,""))
+		self.screen.fill(BLACK)
+		self.screen.blit(self.__images['room']['background'], (0,0))
+		self.__active_buttons = (
+			self.screen.blit(self.__images['room']['btn_leave'], (30,491)),
+			self.screen.blit(self.__images['room']['btn_start'], (631,491)))
+		
+		players, canstart = self.__server.get_players()
+		more_buttons = []
+
+		for i, (alias, ready) in enumerate(players):
+			if alias == None:
+				more_buttons.append(self.screen.blit(self.__images['room']['vacant'], self.__room_pcoor[i]))
+			else:
+				if ready == True:
+					more_buttons.append(self.screen.blit(self.__images['room']['user_ready'], self.__room_pcoor[i]))
+				else:
+					more_buttons.append(self.screen.blit(self.__images['room']['user_nready'], self.__room_pcoor[i]))
+				self.screen.blit(self.font.render(alias, True, BLACK), self.__room_pcoor[i])
+
+		if canstart == False:
+			more_buttons.append(self.screen.blit(self.__images['room']['btn_nostart'], (631,491)))
+		else:
+			more_buttons.append(self.screen.blit(self.__images['room']['btn_start'], (631,491)))
+		
+		self.__active_buttons = self.__active_buttons + tuple(more_buttons)
 
 	def join_game(self):
 		self.__on_display = 'join'
@@ -102,7 +137,12 @@ class mingming:
 		port = int(tkSimpleDialog.askstring('Input', 'Enter port number').strip())
 
 		print 'joining game...'
-		mingclient.mingclient(host, port, self.__alias)
+		self.__client = mingclient.mingclient(host, port, self.__alias)
+
+		self.screen.fill(BLACK)
+		self.screen.blit(self.__images['room']['background'], (0,0))
+		self.__active_buttons = (
+			self.screen.blit(self.__images['room']['btn_leave'], (181,491)),)
 
 	def __get_ip(self):
 		return socket.gethostbyname(socket.gethostname())
@@ -137,6 +177,16 @@ class mingming:
 			for event in pygame.event.get():
 				#QUIT GAME
 				if event.type == QUIT:
+					#leave room if server
+					try:
+						self.__server.leave_room()
+					except AttributeError:
+						pass
+					#leave room if client
+					try:
+						self.__client.exit_room('LEAVE')
+					except AttributeError:
+						pass
 					done = True
 
 				#WHOYOU SCREEN EVENTS
@@ -163,14 +213,13 @@ class mingming:
 								self.__alias.append(event.unicode)
 							self.who_you()
 
-
 				#MAIN SCREEN EVENTS
 				elif self.__on_display == 'main':
 					if event.type == MOUSEBUTTONDOWN:
 						for i, b in enumerate(self.__active_buttons):
 							if b.collidepoint(pygame.mouse.get_pos()):
 								if i == 0:
-									self.create_game()
+									self.create_game(new = True)
 								elif i == 1:
 									self.join_game()
 								elif i == 2:
@@ -210,15 +259,30 @@ class mingming:
 				
 				#HOST GAME SCREEN EVENTS
 				elif self.__on_display == 'host':
-					pass
+					if event.type == MOUSEBUTTONDOWN:
+						for i, b in enumerate(self.__active_buttons):
+							if b.collidepoint(pygame.mouse.get_pos()):
+								#leave room
+								if i == 0:
+									self.__server.leave_room()
+									del self.__server
+									self.main_menu()
 
 				#JOIN GAME SCREEN EVENTS
 				elif self.__on_display == 'join':
-					pass
+					if event.type == MOUSEBUTTONDOWN:
+						for i, b in enumerate(self.__active_buttons):
+							if b.collidepoint(pygame.mouse.get_pos()):
+								#leave room
+								if i == 0:
+									self.__client.exit_room('LEAVE')
+									del self.__client
+									self.main_menu()
 
 			pygame.display.update()
 			self.clock.tick(100)
 		pygame.quit()
+
 		sys.exit()
 
 def main():
