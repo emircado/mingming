@@ -35,6 +35,8 @@ class mingming:
 
 		self.__room_pcoor = [(400,100), (600,100), (400,400), (600,400)]
 
+		self.__active = None
+
 	#preload all images needed
 	def __prepare_images(self):
 		self.__images = {	
@@ -101,30 +103,45 @@ class mingming:
 			Tkinter.Tk().withdraw()
 			port = int(tkSimpleDialog.askstring('Input', 'Enter port number').strip())
 			self.__server = mingserver.mingserver(self.__get_ip(), port, string.join(self.__alias,""))
+			self.__myid = self.__server.id
+			self.__active = 'server'
 
 		self.screen.fill(BLACK)
 		self.screen.blit(self.__images['room']['background'], (0,0))
 		self.__active_buttons = (
-			self.screen.blit(self.__images['room']['btn_leave'], (30,491)),
-			self.screen.blit(self.__images['room']['btn_start'], (631,491)))
+			self.screen.blit(self.__images['room']['btn_leave'], (30,491)),)	#BUTTON 0: LEAVE
 		
-		players, canstart = self.__server.get_players()
+		self.players, self.canstart = self.__server.get_players()
 		more_buttons = []
 
-		for i, (alias, ready) in enumerate(players):
-			if alias == None:
-				more_buttons.append(self.screen.blit(self.__images['room']['vacant'], self.__room_pcoor[i]))
-			else:
-				if ready == True:
-					more_buttons.append(self.screen.blit(self.__images['room']['user_ready'], self.__room_pcoor[i]))
-				else:
-					more_buttons.append(self.screen.blit(self.__images['room']['user_nready'], self.__room_pcoor[i]))
-				self.screen.blit(self.font.render(alias, True, BLACK), self.__room_pcoor[i])
-
-		if canstart == False:
-			more_buttons.append(self.screen.blit(self.__images['room']['btn_nostart'], (631,491)))
+		if self.canstart == False:
+			more_buttons.append(self.screen.blit(self.__images['room']['btn_nostart'], (631,491)))	#BUTTON 1: START
 		else:
 			more_buttons.append(self.screen.blit(self.__images['room']['btn_start'], (631,491)))
+
+		for i, (pid, alias, ready) in enumerate(self.players):
+			if alias == None:
+				more_buttons.append(self.screen.blit(self.__images['room']['vacant'], self.__room_pcoor[i]))	#BUTTON 3-5: VACANT
+
+			else:
+				b = None
+				if ready == True:
+					b = self.screen.blit(self.__images['room']['user_ready'], self.__room_pcoor[i])
+				else:
+					b = self.screen.blit(self.__images['room']['user_nready'], self.__room_pcoor[i])
+				
+				if i == 0:
+					more_buttons.append(b) #BUTTON 2: SERVER CAT
+
+				#can kick clients
+				x, y = self.__room_pcoor[i]
+				x += 100
+				y += 100
+				if i != 0:
+					more_buttons.append(self.screen.blit(self.__images['room']['btn_kick'], self.__room_pcoor[i]))	#BUTTON 3-5: KICK
+
+				#display name
+				self.screen.blit(self.font.render(alias, True, BLACK), self.__room_pcoor[i])
 		
 		self.__active_buttons = self.__active_buttons + tuple(more_buttons)
 
@@ -138,6 +155,8 @@ class mingming:
 
 		print 'joining game...'
 		self.__client = mingclient.mingclient(host, port, self.__alias)
+		self.__myid = self.__client.id
+		self.__active = 'client'
 
 		self.screen.fill(BLACK)
 		self.screen.blit(self.__images['room']['background'], (0,0))
@@ -178,15 +197,10 @@ class mingming:
 				#QUIT GAME
 				if event.type == QUIT:
 					#leave room if server
-					try:
+					if self.__active == 'server':
 						self.__server.leave_room()
-					except AttributeError:
-						pass
-					#leave room if client
-					try:
+					elif self.__active == 'client':
 						self.__client.exit_room('LEAVE')
-					except AttributeError:
-						pass
 					done = True
 
 				#WHOYOU SCREEN EVENTS
@@ -259,6 +273,7 @@ class mingming:
 				
 				#HOST GAME SCREEN EVENTS
 				elif self.__on_display == 'host':
+					self.create_game(new = False)
 					if event.type == MOUSEBUTTONDOWN:
 						for i, b in enumerate(self.__active_buttons):
 							if b.collidepoint(pygame.mouse.get_pos()):
@@ -266,7 +281,25 @@ class mingming:
 								if i == 0:
 									self.__server.leave_room()
 									del self.__server
+									self.__active = None
 									self.main_menu()
+								#start game
+								elif i == 1:
+									if self.canstart == True:
+										print "start thing"
+									else:
+										print "can't start this thing!"								
+								#set ready
+								elif i == 2:
+									self.__server.toggle_ready()
+									self.create_game(new = False)
+
+								#kick clients if occupied
+								elif i >= 3 and i <= 5:
+									#occupied
+									if self.players[i-2][0] != None:
+										self.__server.remove_player(str(self.players[i-2][0]), 'KICK')
+										self.create_game(new = False)
 
 				#JOIN GAME SCREEN EVENTS
 				elif self.__on_display == 'join':
@@ -277,12 +310,12 @@ class mingming:
 								if i == 0:
 									self.__client.exit_room('LEAVE')
 									del self.__client
+									self.__active = None
 									self.main_menu()
 
 			pygame.display.update()
 			self.clock.tick(100)
 		pygame.quit()
-
 		sys.exit()
 
 def main():

@@ -70,8 +70,8 @@ class mingserver:
 		if toremove in self.__players:
 			#close connection + stop thread of client to remove
 			addr, connection, stopper, alias = self.__players[toremove]
-			if means == 'KICK':
-				connection.sendMessage('KICK '+clientid)
+			if means == 'KICK' or means == 'SERVER_LEFT':
+				connection.sendMessage(means+' '+clientid)
 			connection.mySocket.close()
 			stopper.set()
 			self.__playercount-=1
@@ -93,12 +93,12 @@ class mingserver:
 			print 'player to remove not found'
 
 	def get_players(self):
-		p = [(self.alias, self.__pready[0])]
+		p = [(self.id, self.alias, self.__pready[0])]
 		for i in range(1, len(self.__plist)):
 			if self.__plist[i] == None:
-				p.append((None, None))
+				p.append((None, None, None))
 			else:
-				p.append((self.__players[self.__plist[i]][3], self.__pready[i]))
+				p.append((self.__plist[i], self.__players[self.__plist[i]][3], self.__pready[i]))
 
 		b = True
 		if len(self.__players) == 0:

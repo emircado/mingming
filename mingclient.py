@@ -108,4 +108,8 @@ class mingclient:
 				else:
 					print 'client '+message[5:]+' has been kicked out of the room'
 
+			#server left the game
+			elif message.startswith('SERVER_LEFT'):
+				self.exit_room('SERVER_LEFT')
+
 		print 'done receiving messages from server'
