@@ -36,6 +36,9 @@ class mingclient:
 	def get_players(self):
 		return self.__players
 
+	def is_dead(self):
+		return self.__server.is_set()
+
 	def toggle_ready(self):
 		self.__ready = False if self.__ready == True else True
 		self.__clientconnection.sendMessage('READY '+str(self.id)+' '+str(self.__ready))
@@ -57,6 +60,9 @@ class mingclient:
 
 		elif means == 'SERVER_LEFT':
 			print 'The server closed the room.'
+
+		elif means == 'SERVER_DEAD':
+			print 'Dummy connection closed the server.'
 
 		#stop socket and threads
 		self.__server.set()
