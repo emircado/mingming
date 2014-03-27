@@ -36,7 +36,7 @@ class minggame:
 		panel_height = 389/2
 
 		pygame.draw.line(self.screen, LIGHTGRAY, [0, 211], [screen_width, 211], 1)
-        # pygame.draw.rect(self.screen, GRAY, [0, 212, panel_width, panel_height])
+        pygame.draw.rect(self.screen, GRAY, [0, 212, panel_width, panel_height])
         # pygame.draw.line(self.screen, LIGHTGRAY, [panel_width, 212], [panel_width, 211+panel_height], 1)
         # pygame.draw.rect(self.screen, GRAY, [panel_width+1, 212, panel_width, panel_height])
         # pygame.draw.line(self.screen, LIGHTGRAY, [2*panel_width, 212], [2*panel_width, 211+panel_height], 1)
