@@ -106,33 +106,11 @@ class mingserver:
 		elif False in self.__pready:
 			b = False
 
+		#send information to clients
+
 		return p, b
 
 		# return [(self.__players[a][3], b) if a != None else (a, b) for i, (a, b) in enumerate((self.__plist, self.__pready)) ]
-
-	#UI events
-	# def __tempfunc_roomevt(self):
-	# 	while not self.__temp.is_set():
-	# 		Tkinter.Tk().withdraw()
-	# 		message = tkSimpleDialog.askstring('Input', 'Enter input')
-	# 		message = message.strip()
-
-	# 		#quit game (leave room)
-	# 		if message == 'QUIT':
-	# 			self.leave_room()
-
-	# 		#ready to play
-	# 		elif message == 'READY':
-	# 			self.toggle_ready()
-
-	# 		#start game
-	# 		elif message == 'START':
-	# 			self.start_game()
-			
-	# 		#kick client out of game
-	# 		elif message.startswith('KICK '):
-	# 			self.remove_player(message[5:], 'KICK')
-	# 	print 'done getting inputs'
 
 	#send player status to clients
 	def __update_players(self):

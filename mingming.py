@@ -2,6 +2,7 @@
 import mingserver
 import mingclient
 import socket
+import threading
 
 #FRONTEND IMPORTS
 import pygame, sys, os, string
@@ -33,7 +34,7 @@ class mingming:
 
 		self.__prepare_images()
 
-		self.__room_pcoor = [(400,100), (600,100), (400,400), (600,400)]
+		self.__room_pcoor = [(370,50), (580,50), (370,275), (580,275)]
 
 		self.__active = None
 
@@ -100,8 +101,9 @@ class mingming:
 		self.__on_display = 'host'
 
 		if new == True:
-			Tkinter.Tk().withdraw()
-			port = int(tkSimpleDialog.askstring('Input', 'Enter port number').strip())
+			port = 8080
+			# Tkinter.Tk().withdraw()
+			# port = int(tkSimpleDialog.askstring('Input', 'Enter port number').strip())
 			self.__server = mingserver.mingserver(self.__get_ip(), port, string.join(self.__alias,""))
 			self.__myid = self.__server.id
 			self.__active = 'server'
@@ -115,9 +117,9 @@ class mingming:
 		more_buttons = []
 
 		if self.canstart == False:
-			more_buttons.append(self.screen.blit(self.__images['room']['btn_nostart'], (631,491)))	#BUTTON 1: START
+			more_buttons.append(self.screen.blit(self.__images['room']['btn_nostart'], (75,270)))	#BUTTON 1: START
 		else:
-			more_buttons.append(self.screen.blit(self.__images['room']['btn_start'], (631,491)))
+			more_buttons.append(self.screen.blit(self.__images['room']['btn_start'], (75,270)))
 
 		for i, (pid, alias, ready) in enumerate(self.players):
 			if alias == None:
@@ -138,20 +140,23 @@ class mingming:
 				x += 100
 				y += 100
 				if i != 0:
-					more_buttons.append(self.screen.blit(self.__images['room']['btn_kick'], self.__room_pcoor[i]))	#BUTTON 3-5: KICK
+					more_buttons.append(self.screen.blit(self.__images['room']['btn_kick'], (x,y)))	#BUTTON 3-5: KICK
 
 				#display name
 				self.screen.blit(self.font.render(alias, True, BLACK), self.__room_pcoor[i])
 		
 		self.__active_buttons = self.__active_buttons + tuple(more_buttons)
+		self.screen.blit(self.font.render(self.__get_ip(), True, WHITE), (500,500))
 
 	def join_game(self):
 		self.__on_display = 'join'
 
-		Tkinter.Tk().withdraw()
-		host = tkSimpleDialog.askstring('Input', 'Enter IP Address').strip()
-		Tkinter.Tk().withdraw()
-		port = int(tkSimpleDialog.askstring('Input', 'Enter port number').strip())
+		# Tkinter.Tk().withdraw()
+		# host = tkSimpleDialog.askstring('Input', 'Enter IP Address').strip()
+		# Tkinter.Tk().withdraw()
+		# port = int(tkSimpleDialog.askstring('Input', 'Enter port number').strip())
+		host = self.__get_ip()
+		port = 8080
 
 		print 'joining game...'
 		self.__client = mingclient.mingclient(host, port, self.__alias)
@@ -161,7 +166,7 @@ class mingming:
 		self.screen.fill(BLACK)
 		self.screen.blit(self.__images['room']['background'], (0,0))
 		self.__active_buttons = (
-			self.screen.blit(self.__images['room']['btn_leave'], (181,491)),)
+			self.screen.blit(self.__images['room']['btn_leave'], (181,491)),)	#BUTTON 0: LEAVE
 
 	def __get_ip(self):
 		return socket.gethostbyname(socket.gethostname())
