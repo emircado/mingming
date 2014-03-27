@@ -46,7 +46,6 @@ class mingserver:
 			self.remove_player(str(cid), 'SERVER_LEFT')
 
 		#connect dummy to kill socket.accept()
-		# self.__temp.set()
 		self.__waiting.set()
 		socket.socket().connect((self.host, self.port))
 		self.__serversocket.close()
@@ -106,22 +105,18 @@ class mingserver:
 		elif False in self.__pready:
 			b = False
 
-		#send information to clients
-
 		return p, b
-
-		# return [(self.__players[a][3], b) if a != None else (a, b) for i, (a, b) in enumerate((self.__plist, self.__pready)) ]
 
 	#send player status to clients
 	def __update_players(self):
-		message = 'PLAYERS '+str(self.__pready[0])+':'+str(self.id)+':'+str(self.alias)+', '
+		message = 'PLAYERS '+str(self.id)+':'+str(self.alias)+':'+str(self.__pready[0])+', '
 		for i in range(1, len(self.__plist)):
-			message+=str(self.__pready[i])
+			message+=str(self.__plist[i])
 
 			if self.__plist[i] == None:
 				message+=':None:None'
 			else:
-				message+=':'+str(self.__plist[i])+':'+str(self.__players[self.__plist[i]][3])
+				message+=':'+str(self.__players[self.__plist[i]][3])+':'+str(self.__pready[i])
 			
 			if i+1 != len(self.__plist):
 				message+=', '
@@ -193,7 +188,6 @@ class mingserver:
 			elif message.startswith('SET_ALIAS'):
 				self.__players[cid] = self.__players[cid]+(message[10:],)
 				print 'client '+str(cid)+' alias set to '+message[10:]
-
 				self.__update_players()
 
 			#set to ready
@@ -220,9 +214,6 @@ class mingserver:
 
 	def __start_server(self):
 		self.__serversocket.listen(5)
-		
-		#for game events (quit, start, remove, ...)
-		# threading.Thread(target = self.__tempfunc_roomevt).start()
 		
 		#wait for clients to join
 		threading.Thread(target = self.__wait_for_players).start()

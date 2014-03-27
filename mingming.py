@@ -7,6 +7,7 @@ import threading
 #FRONTEND IMPORTS
 import pygame, sys, os, string
 from pygame.locals import *
+import Minggame
 
 #TEMPORARY IMPORTS
 import Tkinter
@@ -33,9 +34,7 @@ class mingming:
 		self.font = pygame.font.Font(None, 35)
 
 		self.__prepare_images()
-
 		self.__room_pcoor = [(370,50), (580,50), (370,275), (580,275)]
-
 		self.__active = None
 
 	#preload all images needed
@@ -148,25 +147,49 @@ class mingming:
 		self.__active_buttons = self.__active_buttons + tuple(more_buttons)
 		self.screen.blit(self.font.render(self.__get_ip(), True, WHITE), (500,500))
 
-	def join_game(self):
+	def join_game(self, new = False):
 		self.__on_display = 'join'
 
-		# Tkinter.Tk().withdraw()
-		# host = tkSimpleDialog.askstring('Input', 'Enter IP Address').strip()
-		# Tkinter.Tk().withdraw()
-		# port = int(tkSimpleDialog.askstring('Input', 'Enter port number').strip())
-		host = self.__get_ip()
-		port = 8080
+		if new == True:
+			# Tkinter.Tk().withdraw()
+			# host = tkSimpleDialog.askstring('Input', 'Enter IP Address').strip()
+			# Tkinter.Tk().withdraw()
+			# port = int(tkSimpleDialog.askstring('Input', 'Enter port number').strip())
+			host = self.__get_ip()
+			port = 8080
 
-		print 'joining game...'
-		self.__client = mingclient.mingclient(host, port, self.__alias)
-		self.__myid = self.__client.id
-		self.__active = 'client'
+			print 'joining game...'
+			self.__client = mingclient.mingclient(host, port, self.__alias)
+			self.__myid = self.__client.id
+			self.__active = 'client'
 
 		self.screen.fill(BLACK)
 		self.screen.blit(self.__images['room']['background'], (0,0))
 		self.__active_buttons = (
 			self.screen.blit(self.__images['room']['btn_leave'], (181,491)),)	#BUTTON 0: LEAVE
+
+		self.players = self.__client.get_players()
+		more_buttons = []
+
+		for i, (pid, alias, ready) in enumerate(self.players):
+			if alias == 'None':
+				self.screen.blit(self.__images['room']['vacant'], self.__room_pcoor[i])
+
+			else:
+				b = None
+				if ready == 'True':
+					b = self.screen.blit(self.__images['room']['user_ready'], self.__room_pcoor[i])
+				else:
+					b = self.screen.blit(self.__images['room']['user_nready'], self.__room_pcoor[i])
+				
+				if int(pid) == self.__client.id:
+					more_buttons.append(b) #BUTTON 1: CLIENT'S CAT
+
+				#display name
+				self.screen.blit(self.font.render(alias, True, BLACK), self.__room_pcoor[i])
+		
+		self.__active_buttons = self.__active_buttons + tuple(more_buttons)
+		# self.screen.blit(self.font.render(self.__get_ip(), True, WHITE), (500,500))
 
 	def __get_ip(self):
 		return socket.gethostbyname(socket.gethostname())
@@ -240,7 +263,7 @@ class mingming:
 								if i == 0:
 									self.create_game(new = True)
 								elif i == 1:
-									self.join_game()
+									self.join_game(new = True)
 								elif i == 2:
 									self.about()
 								elif i == 3:
@@ -278,7 +301,7 @@ class mingming:
 				
 				#HOST GAME SCREEN EVENTS
 				elif self.__on_display == 'host':
-					self.create_game(new = False)
+					self.create_game()
 					if event.type == MOUSEBUTTONDOWN:
 						for i, b in enumerate(self.__active_buttons):
 							if b.collidepoint(pygame.mouse.get_pos()):
@@ -297,17 +320,18 @@ class mingming:
 								#set ready
 								elif i == 2:
 									self.__server.toggle_ready()
-									self.create_game(new = False)
+									self.create_game()
 
 								#kick clients if occupied
 								elif i >= 3 and i <= 5:
 									#occupied
 									if self.players[i-2][0] != None:
 										self.__server.remove_player(str(self.players[i-2][0]), 'KICK')
-										self.create_game(new = False)
+										self.create_game()
 
 				#JOIN GAME SCREEN EVENTS
 				elif self.__on_display == 'join':
+					self.join_game()
 					if event.type == MOUSEBUTTONDOWN:
 						for i, b in enumerate(self.__active_buttons):
 							if b.collidepoint(pygame.mouse.get_pos()):
@@ -317,6 +341,10 @@ class mingming:
 									del self.__client
 									self.__active = None
 									self.main_menu()
+								#toggle ready
+								if i == 1:
+									self.__client.toggle_ready()
+									self.join_game()
 
 			pygame.display.update()
 			self.clock.tick(100)

@@ -22,8 +22,9 @@ class mingclient:
 			self.__clientsocket.connect((host, port))
 			print 'connected!!'
 
+			self.__players = [['None','None','None'], ['None','None','None'], ['None','None','None'], ['None','None','None']]
+
 			#thread stoppers
-			# self.__temp = threading.Event()
 			self.__server = threading.Event()
 
 			#start client
@@ -32,21 +33,8 @@ class mingclient:
 		except Exception as e:
 			traceback.print_exc()
 
-	# def __tempfunc_playerevt(self):
-	# 	while not self.__temp.is_set():
-	# 		Tkinter.Tk().withdraw()
-	# 		message = tkSimpleDialog.askstring('Input', 'Enter input')
-	# 		message = message.strip()
-
-	# 		#leave room
-	# 		if message == 'LEAVE':
-	# 			self.exit_room('LEAVE')
-
-	# 		#toggle ready status
-	# 		elif message == 'READY':
-	# 			toggle_ready()
-
-	# 	print 'done getting client inputs'
+	def get_players(self):
+		return self.__players
 
 	def toggle_ready(self):
 		self.__ready = False if self.__ready == True else True
@@ -91,10 +79,7 @@ class mingclient:
 
 			#recieve player list
 			elif message.startswith('PLAYERS'):
-				print message
-				for ready, pid, palias in [x.split(':') for x in message[8:].split(', ')]:
-					print ready, pid, palias
-				#UPDATE FRONTEND DISPLAYS HERE
+				self.__players = [x.split(':') for x in message[8:].split(', ')]
 
 			#certain client left room
 			elif message.startswith('LEFT'):
