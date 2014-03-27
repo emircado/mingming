@@ -63,6 +63,7 @@ class mingserver:
 		else:
 			self.__playing = True
 			print 'Starting game!'
+			self.__sendmsg_toall("GAME START")
 
 	def remove_player(self, clientid, means):
 		toremove = int(clientid)
@@ -132,7 +133,7 @@ class mingserver:
 			#if server leaves
 			if self.__waiting.is_set():
 				#to be recieved by the dummy client to close wait thread
-				remote_connection.sendMessage('SETID SERVER_LEFT')
+				remote_connection.sendMessage('SETID SERVER_DEAD')
 				remote_socket.close()
 				break
 
@@ -202,7 +203,6 @@ class mingserver:
 
 				print self.__pready
 				self.__update_players()
-				#UPDATE GRAHPICS HERE
 
 		print 'done accommodating client '+str(cid)
 

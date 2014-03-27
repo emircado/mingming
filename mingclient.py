@@ -30,11 +30,17 @@ class mingclient:
 			#start client
 			threading.Thread(target = self.__servermsgs).start()
 
+			#game status
+			self.__status = None
+
 		except Exception as e:
 			traceback.print_exc()
 
 	def get_players(self):
 		return self.__players
+
+	def get_status(self):
+		return self.__status
 
 	def toggle_ready(self):
 		self.__ready = False if self.__ready == True else True
@@ -58,6 +64,10 @@ class mingclient:
 		elif means == 'SERVER_LEFT':
 			print 'The server closed the room.'
 
+		elif means == 'SERVER_DEAD':
+			print 'Dummy connection closed the server.'
+
+		self.__status = 'CLIENT_IDLE'
 		#stop socket and threads
 		self.__server.set()
 		self.__clientsocket.close()
@@ -74,6 +84,7 @@ class mingclient:
 
 					#give alias to server
 					self.__clientconnection.sendMessage('SET_ALIAS '+self.alias)
+					self.__status = 'CLIENT_INROOM'
 				except ValueError:
 					self.exit_room(message[6:])
 
@@ -96,5 +107,13 @@ class mingclient:
 			#server left the game
 			elif message.startswith('SERVER_LEFT'):
 				self.exit_room('SERVER_LEFT')
+
+			#game starts
+			elif message.startswith('GAME'):
+				if message[5:] == 'START':
+					print 'in game na!'
+					self.__status = 'CLIENT_INGAME'
+				elif message[5:] == 'STOP':
+					self.__status = 'CLIENT_IDLE'
 
 		print 'done receiving messages from server'

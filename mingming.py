@@ -1,13 +1,13 @@
 #BACKEND IMPORTS
 import mingserver
 import mingclient
+import minggame
 import socket
 import threading
 
 #FRONTEND IMPORTS
 import pygame, sys, os, string
 from pygame.locals import *
-import Minggame
 
 #TEMPORARY IMPORTS
 import Tkinter
@@ -33,12 +33,17 @@ class mingming:
 		os.environ['SDL_VIDEO_CENTERED'] = '1'
 		self.font = pygame.font.Font(None, 35)
 
-		self.__prepare_images()
+		self.__prepare_resources()
 		self.__room_pcoor = [(370,50), (580,50), (370,275), (580,275)]
 		self.__active = None
 
+		#play music
+		pygame.mixer.init()
+		pygame.mixer.music.load('resources/sounds/music_meowmeow.mp3')
+		pygame.mixer.music.play(-1)
+
 	#preload all images needed
-	def __prepare_images(self):
+	def __prepare_resources(self):
 		self.__images = {	
 			'about':	{	'background': 	pygame.image.load("resources/about/about_background.png")	},
 			
@@ -65,7 +70,15 @@ class mingming:
 							'btn_kick':		pygame.image.load("resources/room/room_button_kick.png").convert_alpha(),
 							'vacant':		pygame.image.load("resources/room/room_vacant.png").convert_alpha(),
 							'user_ready':	pygame.image.load("resources/room/room_occ_ready.png").convert_alpha(),
-							'user_nready':	pygame.image.load("resources/room/room_occ_notready.png").convert_alpha()	}
+							'user_nready':	pygame.image.load("resources/room/room_occ_notready.png").convert_alpha()	},
+			
+			'dialog':	{	'box':			pygame.image.load("resources/dialog/dialog_kitty.png")	}
+			}
+
+		self.__sounds = {
+			'main':	pygame.mixer.music.load('resources/sounds/music_meowmeow.mp3'),	
+			'game':	pygame.mixer.music.load('resources/sounds/music_gameproper.mp3'),
+			'room':	pygame.mixer.music.load('resources/sounds/music_waitingroom.mp3')
 			}
 
 	def who_you(self):
@@ -78,6 +91,8 @@ class mingming:
 
 		name = self.font.render(string.join(self.__alias, "").replace(',','').replace(':',''), True, BLACK)
 		self.screen.blit(name, (430, 285))
+
+		# self.screen.blit(self.__images['dialog']['box'], (0,0))
 
 	def main_menu(self):
 		self.__on_display = 'main'
@@ -163,33 +178,50 @@ class mingming:
 			self.__myid = self.__client.id
 			self.__active = 'client'
 
-		self.screen.fill(BLACK)
-		self.screen.blit(self.__images['room']['background'], (0,0))
-		self.__active_buttons = (
-			self.screen.blit(self.__images['room']['btn_leave'], (181,491)),)	#BUTTON 0: LEAVE
-
 		self.players = self.__client.get_players()
 		more_buttons = []
 
-		for i, (pid, alias, ready) in enumerate(self.players):
-			if alias == 'None':
-				self.screen.blit(self.__images['room']['vacant'], self.__room_pcoor[i])
+		if self.__client.get_status() == 'CLIENT_IDLE':
+			self.main_menu()
+		elif self.__client.get_status() == 'CLIENT_INGAME':
+			self.in_game()
+		elif self.__client.get_status() == 'CLIENT_INROOM':
+			self.screen.fill(BLACK)
+			self.screen.blit(self.__images['room']['background'], (0,0))
+			self.__active_buttons = (
+				self.screen.blit(self.__images['room']['btn_leave'], (181,491)),)	#BUTTON 0: LEAVE
 
-			else:
-				b = None
-				if ready == 'True':
-					b = self.screen.blit(self.__images['room']['user_ready'], self.__room_pcoor[i])
+			for i, (pid, alias, ready) in enumerate(self.players):
+				if alias == 'None':
+					self.screen.blit(self.__images['room']['vacant'], self.__room_pcoor[i])
+
 				else:
-					b = self.screen.blit(self.__images['room']['user_nready'], self.__room_pcoor[i])
-				
-				if int(pid) == self.__client.id:
-					more_buttons.append(b) #BUTTON 1: CLIENT'S CAT
+					b = None
+					if ready == 'True':
+						b = self.screen.blit(self.__images['room']['user_ready'], self.__room_pcoor[i])
+					else:
+						b = self.screen.blit(self.__images['room']['user_nready'], self.__room_pcoor[i])
+					
+					if int(pid) == self.__client.id:
+						more_buttons.append(b) #BUTTON 1: CLIENT'S CAT
 
-				#display name
-				self.screen.blit(self.font.render(alias, True, BLACK), self.__room_pcoor[i])
-		
-		self.__active_buttons = self.__active_buttons + tuple(more_buttons)
-		# self.screen.blit(self.font.render(self.__get_ip(), True, WHITE), (500,500))
+					#display name
+					self.screen.blit(self.font.render(alias, True, BLACK), self.__room_pcoor[i])
+			
+			self.__active_buttons = self.__active_buttons + tuple(more_buttons)
+			# self.screen.blit(self.font.render(self.__get_ip(), True, WHITE), (500,500))
+
+	def in_game(self):
+		self.__on_display = 'ingame'
+
+		host = None
+		if self.__active == 'server':
+			host = self.__server
+		elif self.__active == 'client':
+			host = self.__client
+
+		self.__game = minggame.minggame(self.screen, host, 1)
+		self.__game.start_level()
 
 	def __get_ip(self):
 		return socket.gethostbyname(socket.gethostname())
@@ -314,7 +346,9 @@ class mingming:
 								#start game
 								elif i == 1:
 									if self.canstart == True:
+										self.__server.start_game()
 										print "start thing"
+										self.in_game()
 									else:
 										print "can't start this thing!"								
 								#set ready
@@ -345,6 +379,16 @@ class mingming:
 								if i == 1:
 									self.__client.toggle_ready()
 									self.join_game()
+
+				#FOR DIALOG BOXES
+				elif self.__on_display == 'ingame':
+					print 'mwehehe'
+					self.__game
+					if event.type == KEYDOWN:
+						if event.key == K_BACKSPACE:
+							print 'game over'
+						elif event.key == K_RETURN:
+							print 'something'
 
 			pygame.display.update()
 			self.clock.tick(100)
