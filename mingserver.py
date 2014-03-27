@@ -63,6 +63,7 @@ class mingserver:
 		else:
 			self.__playing = True
 			print 'Starting game!'
+			self.__sendmsg_toall("GAME START")
 
 	def remove_player(self, clientid, means):
 		toremove = int(clientid)

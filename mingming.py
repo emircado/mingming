@@ -1,13 +1,13 @@
 #BACKEND IMPORTS
 import mingserver
 import mingclient
+import minggame
 import socket
 import threading
 
 #FRONTEND IMPORTS
 import pygame, sys, os, string
 from pygame.locals import *
-import Minggame
 
 #TEMPORARY IMPORTS
 import Tkinter
@@ -92,7 +92,7 @@ class mingming:
 		name = self.font.render(string.join(self.__alias, "").replace(',','').replace(':',''), True, BLACK)
 		self.screen.blit(name, (430, 285))
 
-		self.screen.blit(self.__images['dialog']['box'], (0,0))
+		# self.screen.blit(self.__images['dialog']['box'], (0,0))
 
 	def main_menu(self):
 		self.__on_display = 'main'
@@ -181,14 +181,19 @@ class mingming:
 		self.players = self.__client.get_players()
 		more_buttons = []
 
-		if self.__client.is_dead():
+		print self.__client.get_status()
+
+		if self.__client.get_status() == 'CLIENT_IDLE':
 			self.main_menu()
-		else:
+		elif self.__client.get_status() == 'CLIENT_INGAME':
+			self.in_game()
+		#CLIENT INROOM
+		elif self.__client.get_status() == 'CLIENT_INROOM':
+			# print 'inside client room'
 			self.screen.fill(BLACK)
 			self.screen.blit(self.__images['room']['background'], (0,0))
 			self.__active_buttons = (
 				self.screen.blit(self.__images['room']['btn_leave'], (181,491)),)	#BUTTON 0: LEAVE
-
 
 			for i, (pid, alias, ready) in enumerate(self.players):
 				if alias == 'None':
@@ -209,6 +214,17 @@ class mingming:
 			
 			self.__active_buttons = self.__active_buttons + tuple(more_buttons)
 			# self.screen.blit(self.font.render(self.__get_ip(), True, WHITE), (500,500))
+
+	def in_game(self):
+		self.__on_display = 'ingame'
+
+		host = None
+		if self.__active == 'server':
+			host = self.__server
+		elif self.__active == 'client':
+			host = self.__client
+
+		game = minggame.minggame(self.screen, host, 1)
 
 	def __get_ip(self):
 		return socket.gethostbyname(socket.gethostname())
@@ -333,7 +349,9 @@ class mingming:
 								#start game
 								elif i == 1:
 									if self.canstart == True:
+										self.__server.start_game()
 										print "start thing"
+										self.in_game()
 									else:
 										print "can't start this thing!"								
 								#set ready
@@ -366,6 +384,12 @@ class mingming:
 									self.join_game()
 
 				#FOR DIALOG BOXES
+				elif self.__on_display == 'ingame':
+					if event.type == KEYDOWN:
+						if event.key == K_BACKSPACE:
+							print 'game over'
+						elif event.key == K_RETURN:
+							print 'something'
 				# elif self.__on_display == 'dialog':
 
 
