@@ -181,15 +181,11 @@ class mingming:
 		self.players = self.__client.get_players()
 		more_buttons = []
 
-		print self.__client.get_status()
-
 		if self.__client.get_status() == 'CLIENT_IDLE':
 			self.main_menu()
 		elif self.__client.get_status() == 'CLIENT_INGAME':
 			self.in_game()
-		#CLIENT INROOM
 		elif self.__client.get_status() == 'CLIENT_INROOM':
-			# print 'inside client room'
 			self.screen.fill(BLACK)
 			self.screen.blit(self.__images['room']['background'], (0,0))
 			self.__active_buttons = (
@@ -224,7 +220,8 @@ class mingming:
 		elif self.__active == 'client':
 			host = self.__client
 
-		game = minggame.minggame(self.screen, host, 1)
+		self.__game = minggame.minggame(self.screen, host, 1)
+		self.__game.start_level()
 
 	def __get_ip(self):
 		return socket.gethostbyname(socket.gethostname())
@@ -385,13 +382,13 @@ class mingming:
 
 				#FOR DIALOG BOXES
 				elif self.__on_display == 'ingame':
+					print 'mwehehe'
+					self.__game
 					if event.type == KEYDOWN:
 						if event.key == K_BACKSPACE:
 							print 'game over'
 						elif event.key == K_RETURN:
 							print 'something'
-				# elif self.__on_display == 'dialog':
-
 
 			pygame.display.update()
 			self.clock.tick(100)
