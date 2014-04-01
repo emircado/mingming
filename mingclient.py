@@ -22,6 +22,10 @@ class mingclient:
 			self.__clientsocket.connect((host, port))
 			print 'connected!!'
 
+			#THREAD THINGS
+			#queue frontend of game proper
+			self.cv_game_front = threading.Condition() 
+			self.for_game_front = []
 			self.__players = [['None','None','None'], ['None','None','None'], ['None','None','None'], ['None','None','None']]
 
 			#thread stoppers
@@ -45,6 +49,18 @@ class mingclient:
 	def toggle_ready(self):
 		self.__ready = False if self.__ready == True else True
 		self.__clientconnection.sendMessage('READY '+str(self.id)+' '+str(self.__ready))
+
+	def next_game(self):
+		self.__status = 'CLIENT_INGAME'
+
+	def send_game_command(self, msg):
+		self.__clientconnection.sendMessage('GAME_CMD '+msg)
+
+	def __send_game_update(self, msg):
+		self.cv_game_front.acquire()
+		self.for_game_front.append(msg)
+		self.cv_game_front.notify()
+		self.cv_game_front.release()
 
 	#the client either leaves or is kicked out of the room
 	def exit_room(self, means = None):
@@ -108,12 +124,25 @@ class mingclient:
 			elif message.startswith('SERVER_LEFT'):
 				self.exit_room('SERVER_LEFT')
 
-			#game starts
-			elif message.startswith('GAME'):
+			#in-game status commands
+			elif message.startswith('GAME '):
+				#game starts
 				if message[5:] == 'START':
-					print 'in game na!'
 					self.__status = 'CLIENT_INGAME'
-				elif message[5:] == 'STOP':
-					self.__status = 'CLIENT_IDLE'
+					print 'Game has started'
+				elif message[5:] == 'OVER':
+					self.__status = 'CLIENT_INROOM'
+					print 'Game over'
+
+					#reset game thread things
+					self.cv_game_front = threading.Condition() 
+					self.for_game_front = []
+				elif message[5:] == 'KILL':
+					self.exit_room('SERVER_LEFT')
+				elif message[5:] == 'NEXT':
+					self.__status = 'CLIENT_NEXTGAME'
+
+			elif message.startswith('GAME_UPDATE'):
+				self.__send_game_update(message[12:])
 
 		print 'done receiving messages from server'
