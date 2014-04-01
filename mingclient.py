@@ -2,6 +2,7 @@ import socket
 import connection
 import traceback
 import threading
+import string
 
 import Tkinter
 import tkSimpleDialog
@@ -45,6 +46,23 @@ class mingclient:
 	def toggle_ready(self):
 		self.__ready = False if self.__ready == True else True
 		self.__clientconnection.sendMessage('READY '+str(self.id)+' '+str(self.__ready))
+
+	def next_game(self):
+		self.__status = 'CLIENT_INGAME'
+
+	def send_game_command(self, msg):
+		self.__clientconnection.sendMessage('GAME_CMD '+msg+' '+str(self.id))
+
+	def __reset_update_queue(self):
+		#reset game thread things
+		self.cv_game_front = threading.Condition() 
+		self.for_game_front = []
+
+	def __send_game_update(self, msg, pid):
+		self.cv_game_front.acquire()
+		self.for_game_front.append((msg, pid))
+		self.cv_game_front.notify()
+		self.cv_game_front.release()
 
 	#the client either leaves or is kicked out of the room
 	def exit_room(self, means = None):
@@ -108,12 +126,28 @@ class mingclient:
 			elif message.startswith('SERVER_LEFT'):
 				self.exit_room('SERVER_LEFT')
 
-			#game starts
-			elif message.startswith('GAME'):
+			#in-game status commands
+			elif message.startswith('GAME '):
+				#game starts
 				if message[5:] == 'START':
-					print 'in game na!'
+					self.__reset_update_queue()
 					self.__status = 'CLIENT_INGAME'
-				elif message[5:] == 'STOP':
-					self.__status = 'CLIENT_IDLE'
+					print 'Game has started'
+				elif message[5:] == 'OVER':
+					self.__reset_update_queue()
+					self.__status = 'CLIENT_INROOM'
+					print 'Game over'
+
+				elif message[5:] == 'KILL':
+					self.__reset_update_queue()
+					self.exit_room('SERVER_LEFT')
+
+				elif message[5:] == 'NEXT':
+					self.__reset_update_queue()					
+					self.__status = 'CLIENT_NEXTGAME'
+
+			elif message.startswith('GAME_UPDATE'):
+				msg, pid = string.split(message[12:], ' ')
+				self.__send_game_update(msg, int(pid))
 
 		print 'done receiving messages from server'

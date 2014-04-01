@@ -2,6 +2,7 @@ import socket
 import connection
 import traceback
 import threading
+import string
 
 import Tkinter
 import tkSimpleDialog
@@ -33,7 +34,8 @@ class mingserver:
 			self.__waiting = threading.Event()
 
 			#start server
-			self.__start_server()
+			self.__serversocket.listen(5)
+			threading.Thread(target = self.__wait_for_players).start()
 			
 		except Exception as e:
 			traceback.print_exc()
@@ -53,7 +55,7 @@ class mingserver:
 	def toggle_ready(self):
 		self.__pready[0] = False if self.__pready[0] else True
 		self.__update_players()
-		
+
 	def start_game(self):
 		print 'Attempting to start game...'
 		if len(self.__players) == 0:
@@ -62,8 +64,25 @@ class mingserver:
 			print 'Not all players are ready' 
 		else:
 			self.__playing = True
+			self.__reset_command_queue()
 			print 'Starting game!'
 			self.__sendmsg_toall("GAME START")
+
+	def stop_game(self, means):
+		#means could either be
+		# OVER - game over for the players
+		# KILL - server left the game unexpectedly
+		print 'Ending game...'
+		self.__playing = False
+		self.__sendmsg_toall("GAME "+means)
+		self.__reset_command_queue()
+
+		if means == 'KILL':
+			self.leave_room()
+
+	def next_game(self):
+		self.__reset_command_queue()
+		self.__sendmsg_toall("GAME NEXT")
 
 	def remove_player(self, clientid, means):
 		toremove = int(clientid)
@@ -91,14 +110,17 @@ class mingserver:
 			self.__update_players()
 		else:
 			print 'player to remove not found'
-
+			
 	def get_players(self):
 		p = [(self.id, self.alias, self.__pready[0])]
 		for i in range(1, len(self.__plist)):
 			if self.__plist[i] == None:
 				p.append((None, None, None))
 			else:
-				p.append((self.__plist[i], self.__players[self.__plist[i]][3], self.__pready[i]))
+				try:
+					p.append((self.__plist[i], self.__players[self.__plist[i]][3], self.__pready[i]))
+				except Exception:
+					p.append((self.__plist[i], '', self.__pready[i]))
 
 		b = True
 		if len(self.__players) == 0:
@@ -107,6 +129,21 @@ class mingserver:
 			b = False
 
 		return p, b
+
+	#add command to game queue
+	def send_game_command(self, msg, pid = 0):
+		self.cv_game_front.acquire()
+		self.for_game_front.append((msg, pid))
+		self.cv_game_front.notify()
+		self.cv_game_front.release()
+
+	#send game update to clients
+	def send_game_update(self, msg):
+		self.__sendmsg_toall('GAME_UPDATE '+msg)
+
+	def __reset_command_queue(self):
+		self.cv_game_front = threading.Condition() 
+		self.for_game_front = []
 
 	#send player status to clients
 	def __update_players(self):
@@ -132,13 +169,13 @@ class mingserver:
 			
 			#if server leaves
 			if self.__waiting.is_set():
-				#to be recieved by the dummy client to close wait thread
+				#to be recieved by the dummy client that closed this thread
 				remote_connection.sendMessage('SETID SERVER_DEAD')
 				remote_socket.close()
 				break
 
 			#room is busy
-			if self.__playing:
+			if self.__playing == True:
 				remote_connection.sendMessage('SETID SERVER_BUSY')
 				remote_socket.close()
 
@@ -175,6 +212,13 @@ class mingserver:
 
 		print 'done waiting for players'
 
+	#send message to all connected clients
+	def __sendmsg_toall(self, msg):
+		for cid in self.__players:
+			addr, connection, stopper, alias = self.__players[cid]
+
+			connection.sendMessage(msg)
+
 	#handles client requests (leave, ...)
 	def __clientmsgs(self, cid):
 		addr, remote_connection, stopper = self.__players[cid]
@@ -204,16 +248,10 @@ class mingserver:
 				print self.__pready
 				self.__update_players()
 
+			#receive game command
+			elif message.startswith('GAME_CMD'):
+				msg, pid = string.split(message[9:], ' ')
+				self.send_game_command(msg, int(pid))
+
 		print 'done accommodating client '+str(cid)
 
-	def __sendmsg_toall(self, msg):
-		for cid in self.__players:
-			addr, connection, stopper, alias = self.__players[cid]
-
-			connection.sendMessage(msg)
-
-	def __start_server(self):
-		self.__serversocket.listen(5)
-		
-		#wait for clients to join
-		threading.Thread(target = self.__wait_for_players).start()

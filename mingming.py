@@ -38,9 +38,9 @@ class mingming:
 		self.__active = None
 
 		#play music
-		pygame.mixer.init()
-		pygame.mixer.music.load('resources/sounds/music_meowmeow.mp3')
-		pygame.mixer.music.play(-1)
+		# pygame.mixer.init()
+		# pygame.mixer.music.load('resources/sounds/music_meowmeow.mp3')
+		# pygame.mixer.music.play(-1)
 
 	#preload all images needed
 	def __prepare_resources(self):
@@ -115,6 +115,7 @@ class mingming:
 		self.__on_display = 'host'
 
 		if new == True:
+			print 'Creating game...'
 			port = 8080
 			# Tkinter.Tk().withdraw()
 			# port = int(tkSimpleDialog.askstring('Input', 'Enter port number').strip())
@@ -191,6 +192,7 @@ class mingming:
 			self.__active_buttons = (
 				self.screen.blit(self.__images['room']['btn_leave'], (181,491)),)	#BUTTON 0: LEAVE
 
+			# print self.players
 			for i, (pid, alias, ready) in enumerate(self.players):
 				if alias == 'None':
 					self.screen.blit(self.__images['room']['vacant'], self.__room_pcoor[i])
@@ -212,17 +214,45 @@ class mingming:
 			# self.screen.blit(self.font.render(self.__get_ip(), True, WHITE), (500,500))
 
 	def in_game(self):
-		self.__on_display = 'ingame'
+		game_over = False
+		level = 0
 
-		host = None
 		if self.__active == 'server':
-			host = self.__server
+			self.__server.start_game()
+			while not game_over:
+				print level
+				level += 1
+				game_over = minggame.minggame(self.screen, self.clock, self.__server, level).start_game_server()
+
+			#server closed the game unexpectedly
+			if game_over == -1:
+				del self.__server
+				self.__active = None
+				self.main_menu()
+			#lost the game
+			elif game_over == True:
+				self.create_game(new = False)
+				self.__server.toggle_ready()
+
 		elif self.__active == 'client':
-			host = self.__client
+			while not game_over:
+				print level
+				level += 1
+				game_over = minggame.minggame(self.screen, self.clock, self.__client, level).start_game_client()
 
-		self.__game = minggame.minggame(self.screen, host, 1)
-		self.__game.start_level()
+			#server closed the game unexpectedly
+			if game_over == -1:
+				del self.__client
+				self.__active = None
+				self.main_menu()
+			#lost the game
+			elif game_over == True:
+				self.join_game(new = False)
+				self.__client.toggle_ready()
 
+		elif self.__active == None:
+			self.main_menu()
+			
 	def __get_ip(self):
 		return socket.gethostbyname(socket.gethostname())
 
@@ -253,142 +283,128 @@ class mingming:
 		#event handling, repainting
 		done = False
 		while not done:
-			for event in pygame.event.get():
-				#QUIT GAME
-				if event.type == QUIT:
-					#leave room if server
-					if self.__active == 'server':
-						self.__server.leave_room()
-					elif self.__active == 'client':
-						self.__client.exit_room('LEAVE')
-					done = True
+			event = pygame.event.poll()
+			#QUIT GAME
+			if event.type == QUIT:
+				#leave room if server
+				if self.__active == 'server':
+					self.__server.leave_room()
+				elif self.__active == 'client':
+					self.__client.exit_room('LEAVE')
+				done = True
 
-				#WHOYOU SCREEN EVENTS
-				elif self.__on_display == 'whoyou':
-					if event.type == MOUSEBUTTONDOWN:
-						for i, b in enumerate(self.__active_buttons):
-							if b.collidepoint(pygame.mouse.get_pos()):
-								#arrow next
-								if i == 0:
-									self.__alias = string.join(self.__alias, "")
-									self.main_menu()
+			#WHOYOU SCREEN EVENTS
+			elif self.__on_display == 'whoyou':
+				if event.type == MOUSEBUTTONDOWN:
+					for i, b in enumerate(self.__active_buttons):
+						if b.collidepoint(pygame.mouse.get_pos()):
+							#arrow next
+							if i == 0:
+								self.__alias = string.join(self.__alias, "")
+								self.main_menu()
 
-					#input field
-					elif event.type == KEYDOWN:
-						if event.key == K_BACKSPACE:
-							self.__alias = self.__alias[:-1]
-							self.who_you()
-						elif event.key == K_RETURN:
-							self.__alias = string.join(self.__alias, "")
-							self.main_menu()
-						else:
-							#20 characters limit
-							if len(self.__alias) < 21:
-								self.__alias.append(event.unicode)
-							self.who_you()
+				#input field
+				elif event.type == KEYDOWN:
+					if event.key == K_BACKSPACE:
+						self.__alias = self.__alias[:-1]
+						self.who_you()
+					elif event.key == K_RETURN:
+						self.__alias = string.join(self.__alias, "")
+						self.main_menu()
+					else:
+						#20 characters limit
+						if len(self.__alias) < 21:
+							self.__alias.append(event.unicode)
+						self.who_you()
 
-				#MAIN SCREEN EVENTS
-				elif self.__on_display == 'main':
-					if event.type == MOUSEBUTTONDOWN:
-						for i, b in enumerate(self.__active_buttons):
-							if b.collidepoint(pygame.mouse.get_pos()):
-								if i == 0:
-									self.create_game(new = True)
-								elif i == 1:
-									self.join_game(new = True)
-								elif i == 2:
-									self.about()
-								elif i == 3:
-									self.howto(1)
-				
-				#ABOUT SCREEN EVENTS
-				elif self.__on_display == 'about':
-					if event.type == MOUSEBUTTONDOWN:
-						for i, b in enumerate(self.__active_buttons):
-							if b.collidepoint(pygame.mouse.get_pos()):
-								#return back to main menu
-								if i == 0:
-									self.main_menu()
+			#MAIN SCREEN EVENTS
+			elif self.__on_display == 'main':
+				if event.type == MOUSEBUTTONDOWN:
+					for i, b in enumerate(self.__active_buttons):
+						if b.collidepoint(pygame.mouse.get_pos()):
+							if i == 0:
+								self.create_game(new = True)
+							elif i == 1:
+								self.join_game(new = True)
+							elif i == 2:
+								self.about()
+							elif i == 3:
+								self.howto(1)
+			
+			#ABOUT SCREEN EVENTS
+			elif self.__on_display == 'about':
+				if event.type == MOUSEBUTTONDOWN:
+					for i, b in enumerate(self.__active_buttons):
+						if b.collidepoint(pygame.mouse.get_pos()):
+							#return back to main menu
+							if i == 0:
+								self.main_menu()
 
-				#HOW TO PLAY SCREEN EVENTS, page1
-				elif self.__on_display == 'howto1':
-					if event.type == MOUSEBUTTONDOWN:
-						for i, b in enumerate(self.__active_buttons):
-							if b.collidepoint(pygame.mouse.get_pos()):
-								#return back to main menu
-								if i == 0:
-									self.main_menu()
-								#proceed to next page
-								elif i == 1:
-									self.howto(2)
+			#HOW TO PLAY SCREEN EVENTS, page1
+			elif self.__on_display == 'howto1':
+				if event.type == MOUSEBUTTONDOWN:
+					for i, b in enumerate(self.__active_buttons):
+						if b.collidepoint(pygame.mouse.get_pos()):
+							#return back to main menu
+							if i == 0:
+								self.main_menu()
+							#proceed to next page
+							elif i == 1:
+								self.howto(2)
 
-				#HOW TO PLAY SCREEN EVENTS, page 2
-				elif self.__on_display == 'howto2':
-					if event.type == MOUSEBUTTONDOWN:
-						for i, b in enumerate(self.__active_buttons):
-							if b.collidepoint(pygame.mouse.get_pos()):
-								#return to previous page
-								if i == 0:
-									self.howto(1)
-				
-				#HOST GAME SCREEN EVENTS
-				elif self.__on_display == 'host':
-					self.create_game()
-					if event.type == MOUSEBUTTONDOWN:
-						for i, b in enumerate(self.__active_buttons):
-							if b.collidepoint(pygame.mouse.get_pos()):
-								#leave room
-								if i == 0:
-									self.__server.leave_room()
-									del self.__server
-									self.__active = None
-									self.main_menu()
-								#start game
-								elif i == 1:
-									if self.canstart == True:
-										self.__server.start_game()
-										print "start thing"
-										self.in_game()
-									else:
-										print "can't start this thing!"								
-								#set ready
-								elif i == 2:
-									self.__server.toggle_ready()
+			#HOW TO PLAY SCREEN EVENTS, page 2
+			elif self.__on_display == 'howto2':
+				if event.type == MOUSEBUTTONDOWN:
+					for i, b in enumerate(self.__active_buttons):
+						if b.collidepoint(pygame.mouse.get_pos()):
+							#return to previous page
+							if i == 0:
+								self.howto(1)
+			
+			#HOST GAME SCREEN EVENTS
+			elif self.__on_display == 'host':
+				self.create_game()
+				if event.type == MOUSEBUTTONDOWN:
+					for i, b in enumerate(self.__active_buttons):
+						if b.collidepoint(pygame.mouse.get_pos()):
+							#leave room
+							if i == 0:
+								self.__server.leave_room()
+								del self.__server
+								self.__active = None
+								self.main_menu()
+							#start game
+							elif i == 1:
+								if self.canstart == True:
+									self.in_game()						
+							#set ready
+							elif i == 2:
+								self.__server.toggle_ready()
+								self.create_game()
+
+							#kick clients if occupied
+							elif i >= 3 and i <= 5:
+								#occupied
+								if self.players[i-2][0] != None:
+									self.__server.remove_player(str(self.players[i-2][0]), 'KICK')
 									self.create_game()
 
-								#kick clients if occupied
-								elif i >= 3 and i <= 5:
-									#occupied
-									if self.players[i-2][0] != None:
-										self.__server.remove_player(str(self.players[i-2][0]), 'KICK')
-										self.create_game()
-
-				#JOIN GAME SCREEN EVENTS
-				elif self.__on_display == 'join':
-					self.join_game()
-					if event.type == MOUSEBUTTONDOWN:
-						for i, b in enumerate(self.__active_buttons):
-							if b.collidepoint(pygame.mouse.get_pos()):
-								#leave room
-								if i == 0:
-									self.__client.exit_room('LEAVE')
-									del self.__client
-									self.__active = None
-									self.main_menu()
-								#toggle ready
-								if i == 1:
-									self.__client.toggle_ready()
-									self.join_game()
-
-				#FOR DIALOG BOXES
-				elif self.__on_display == 'ingame':
-					print 'mwehehe'
-					self.__game
-					if event.type == KEYDOWN:
-						if event.key == K_BACKSPACE:
-							print 'game over'
-						elif event.key == K_RETURN:
-							print 'something'
+			#JOIN GAME SCREEN EVENTS
+			elif self.__on_display == 'join':
+				self.join_game()
+				if event.type == MOUSEBUTTONDOWN:
+					for i, b in enumerate(self.__active_buttons):
+						if b.collidepoint(pygame.mouse.get_pos()):
+							#leave room
+							if i == 0:
+								self.__client.exit_room('LEAVE')
+								del self.__client
+								self.__active = None
+								self.main_menu()
+							#toggle ready
+							if i == 1:
+								self.__client.toggle_ready()
+								self.join_game()
 
 			pygame.display.update()
 			self.clock.tick(100)
