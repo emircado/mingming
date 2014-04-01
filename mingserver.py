@@ -2,6 +2,7 @@ import socket
 import connection
 import traceback
 import threading
+import string
 
 import Tkinter
 import tkSimpleDialog
@@ -28,11 +29,6 @@ class mingserver:
 			self.__serversocket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
 			self.__serversocket.bind((self.host, self.port))
 			print 'Server ready...'
-
-			#THREAD THINGS
-			#queue frontend of game proper
-			self.cv_game_front = threading.Condition() 
-			self.for_game_front = []
 
 			#threads stoppers
 			self.__waiting = threading.Event()
@@ -68,6 +64,7 @@ class mingserver:
 			print 'Not all players are ready' 
 		else:
 			self.__playing = True
+			self.__reset_command_queue()
 			print 'Starting game!'
 			self.__sendmsg_toall("GAME START")
 
@@ -78,11 +75,13 @@ class mingserver:
 		print 'Ending game...'
 		self.__playing = False
 		self.__sendmsg_toall("GAME "+means)
+		self.__reset_command_queue()
 
 		if means == 'KILL':
 			self.leave_room()
 
 	def next_game(self):
+		self.__reset_command_queue()
 		self.__sendmsg_toall("GAME NEXT")
 
 	def remove_player(self, clientid, means):
@@ -132,15 +131,19 @@ class mingserver:
 		return p, b
 
 	#add command to game queue
-	def send_game_command(self, msg):
+	def send_game_command(self, msg, pid = 0):
 		self.cv_game_front.acquire()
-		self.for_game_front.append(msg)
+		self.for_game_front.append((msg, pid))
 		self.cv_game_front.notify()
 		self.cv_game_front.release()
 
 	#send game update to clients
 	def send_game_update(self, msg):
 		self.__sendmsg_toall('GAME_UPDATE '+msg)
+
+	def __reset_command_queue(self):
+		self.cv_game_front = threading.Condition() 
+		self.for_game_front = []
 
 	#send player status to clients
 	def __update_players(self):
@@ -247,7 +250,8 @@ class mingserver:
 
 			#receive game command
 			elif message.startswith('GAME_CMD'):
-				self.send_game_command(message[9:])
+				msg, pid = string.split(message[9:], ' ')
+				self.send_game_command(msg, int(pid))
 
 		print 'done accommodating client '+str(cid)
 

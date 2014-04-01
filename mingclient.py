@@ -2,6 +2,7 @@ import socket
 import connection
 import traceback
 import threading
+import string
 
 import Tkinter
 import tkSimpleDialog
@@ -22,10 +23,6 @@ class mingclient:
 			self.__clientsocket.connect((host, port))
 			print 'connected!!'
 
-			#THREAD THINGS
-			#queue frontend of game proper
-			self.cv_game_front = threading.Condition() 
-			self.for_game_front = []
 			self.__players = [['None','None','None'], ['None','None','None'], ['None','None','None'], ['None','None','None']]
 
 			#thread stoppers
@@ -54,11 +51,16 @@ class mingclient:
 		self.__status = 'CLIENT_INGAME'
 
 	def send_game_command(self, msg):
-		self.__clientconnection.sendMessage('GAME_CMD '+msg)
+		self.__clientconnection.sendMessage('GAME_CMD '+msg+' '+str(self.id))
 
-	def __send_game_update(self, msg):
+	def __reset_update_queue(self):
+		#reset game thread things
+		self.cv_game_front = threading.Condition() 
+		self.for_game_front = []
+
+	def __send_game_update(self, msg, pid):
 		self.cv_game_front.acquire()
-		self.for_game_front.append(msg)
+		self.for_game_front.append((msg, pid))
 		self.cv_game_front.notify()
 		self.cv_game_front.release()
 
@@ -128,21 +130,24 @@ class mingclient:
 			elif message.startswith('GAME '):
 				#game starts
 				if message[5:] == 'START':
+					self.__reset_update_queue()
 					self.__status = 'CLIENT_INGAME'
 					print 'Game has started'
 				elif message[5:] == 'OVER':
+					self.__reset_update_queue()
 					self.__status = 'CLIENT_INROOM'
 					print 'Game over'
 
-					#reset game thread things
-					self.cv_game_front = threading.Condition() 
-					self.for_game_front = []
 				elif message[5:] == 'KILL':
+					self.__reset_update_queue()
 					self.exit_room('SERVER_LEFT')
+
 				elif message[5:] == 'NEXT':
+					self.__reset_update_queue()					
 					self.__status = 'CLIENT_NEXTGAME'
 
 			elif message.startswith('GAME_UPDATE'):
-				self.__send_game_update(message[12:])
+				msg, pid = string.split(message[12:], ' ')
+				self.__send_game_update(msg, int(pid))
 
 		print 'done receiving messages from server'

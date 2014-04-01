@@ -216,10 +216,11 @@ class mingming:
 	def in_game(self):
 		game_over = False
 		level = 0
-		
+
 		if self.__active == 'server':
 			self.__server.start_game()
 			while not game_over:
+				print level
 				level += 1
 				game_over = minggame.minggame(self.screen, self.clock, self.__server, level).start_game_server()
 
@@ -234,9 +235,8 @@ class mingming:
 				self.__server.toggle_ready()
 
 		elif self.__active == 'client':
-			host = self.__client
-
 			while not game_over:
+				print level
 				level += 1
 				game_over = minggame.minggame(self.screen, self.clock, self.__client, level).start_game_client()
 
