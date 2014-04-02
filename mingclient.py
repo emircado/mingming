@@ -130,7 +130,7 @@ class mingclient:
 			#game updates
 			elif message.startswith('GAME_UPDATE'):
 				msg, pid = string.split(message[12:], ' ')
-				self.__send_game_update(msg, int(pid))
+				self.__send_game_update(msg, pid)
 
 				if msg == 'GAME_OVER':
 					self.__status = 'CLIENT_INROOM'

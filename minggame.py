@@ -1,6 +1,8 @@
 #BACKEND IMPORTS
 from __future__ import division
 import threading
+import mingpanel
+import string
 
 #FRONTEND IMPORTS
 import pygame
@@ -46,6 +48,9 @@ class minggame:
 		self.__current = self.__level.start
 		self.__animations[self.__level.cat].play()
 
+		#ming panel
+		self.__mypanel = None
+
 		#thread stopper
 		self.__done = False
 		#game status
@@ -53,7 +58,7 @@ class minggame:
 
 		#variables for street scrolling
 		self.__x1 = 0
-		self.__x2 = screen_width
+		self.__x2 = 800
 
 		#variables for cat scrolling
 		self.__catchunk = 800//(self.__level.win-self.__level.lose+3)
@@ -119,7 +124,9 @@ class minggame:
 		self.__screen.fill(MEDYO_BLUE)
 
 		#draw upper panel
+		# if self.__x1 <= 800:
 		self.__screen.blit(self.__images['background']['ming'], (self.__x1,-30))
+		# if self.__x2 <= 800:
 		self.__screen.blit(self.__images['background']['ming'], (self.__x2,-30))
 		self.__x1-=0.6
 		self.__x2-=0.6
@@ -205,7 +212,7 @@ class minggame:
 					self.__host.send_game_update('GAME_OVER '+str(self.__host.id))
 					self.__done = True
 				else:
-					self.__host.send_game_update('CURRENT:'+str(self.__current)+' '+str(pid))		
+					self.__host.send_game_update('CURRENT:'+str(self.__current)+' '+str(pid))
 
 	#process updates received by client. CLIENT ONLY
 	def __process_updates(self):
@@ -219,7 +226,7 @@ class minggame:
 				self.__catbuffer+=self.__catchunk*(self.__current-before)
 
 				#advance to new command
-				if pid == self.__host.id:
+				if int(pid) == self.__host.id:
 					self.__reset_timer()
 
 			#win game
@@ -230,11 +237,19 @@ class minggame:
 			#lose game
 			elif update == 'GAME_OVER':
 				self.__game_over = 0
-				self.__done = True			
+				self.__done = True
+
+			#receive panels
+			elif update == 'PANELS':
+				self.__mypanel = [int(i) for i in string.split(pid, ',')]
+				print self.__mypanel
 
 	def start_game_server(self):
 		threading.Thread(target = self.__start_timer).start()
 		threading.Thread(target = self.__process_commands).start()
+		self.__panel_list = self.__host.send_panels(mingpanel.generate_panels()) 	#distribute panels to players
+		self.__mypanel = self.__panel_list[0]
+		print self.__mypanel
 
 		while not self.__done:
 			event = pygame.event.poll()

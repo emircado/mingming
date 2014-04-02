@@ -89,7 +89,6 @@ class mingming:
 			'room':	pygame.mixer.music.load('resources/sounds/music_waitingroom.mp3')
 			}
 
-
 	def who_you(self):
 		self.__on_display = 'whoyou'
 
@@ -152,7 +151,6 @@ class mingming:
 			else:
 				b = None
 				if ready == True:
-					# b = self.screen.blit(self.__images['room']['user_ready'], self.__room_pcoor[i])
 					self.__mingpillow.play()
 					b = self.__mingpillow.blit(self.screen, self.__room_pcoor[i])
 				else:
@@ -212,7 +210,6 @@ class mingming:
 					b = None
 					if ready == 'True':
 						self.__mingpillow.play()
-						# b = self.screen.blit(self.__images['room']['user_ready'], self.__room_pcoor[i])
 						b = self.__mingpillow.blit(self.screen, self.__room_pcoor[i])
 					else:
 						b = self.screen.blit(self.__images['room']['user_nready'], self.__room_pcoor[i])
@@ -374,9 +371,6 @@ class mingming:
 				self.create_game()
 				if event.type == MOUSEBUTTONDOWN:
 					for i, b in enumerate(self.__active_buttons):
-						# if b == None:
-							# b = Rect(self.__mingpillow.getRect())
-
 						if b.collidepoint(pygame.mouse.get_pos()):
 							#leave room
 							if i == 0:
