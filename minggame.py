@@ -4,14 +4,16 @@ import threading
 
 #FRONTEND IMPORTS
 import pygame
+import pyganim
 from pygame.locals import *
 
 class level:
-	def __init__(self, timer, start, lose, win):
+	def __init__(self, timer, lose, win, cat):
 		self.timer = timer
-		self.start = start
+		self.start = 0
 		self.lose = lose
 		self.win = win
+		self.cat = cat
 
 BLACK     = pygame.Color(   0,   0,   0)
 WHITE     = pygame.Color( 255, 255, 255)
@@ -19,6 +21,7 @@ GREEN     = pygame.Color(   0, 255,   0)
 RED       = pygame.Color( 255,   0,   0)
 GRAY      = pygame.Color( 127, 127, 127)
 LIGHTGRAY = pygame.Color( 200, 191, 231)
+MEDYO_BLUE= pygame.Color(  76,  81,  95)
 
 screen_width = 800
 x_pos = screen_width/3
@@ -41,45 +44,97 @@ class minggame:
 		self.__lvlnum = lvlnum
 		self.__level = self.__levels[self.__lvlnum]
 		self.__current = self.__level.start
+		self.__animations[self.__level.cat].play()
 
 		#thread stopper
 		self.__done = False
 		#game status
 		self.__game_over = -1
 
+		#variables for street scrolling
+		self.__x1 = 0
+		self.__x2 = screen_width
+
+		#variables for cat scrolling
+		self.__catchunk = 800//(self.__level.win-self.__level.lose+3)
+		self.__catchunk = self.__catchunk+1 if self.__catchunk%2 == 1 else self.__catchunk
+		self.__catx = self.__catchunk*(self.__current - self.__level.lose) - 30
+		self.__caty = 50 if self.__level.cat == 'walk' else 30
+		self.__catbuffer = 0
+
 	def __prepare_resources(self):
 		self.__levels = {
-			1: level(10, 0, -5, 10),
-			2: level(10, 0, -5, 10),
-			3: level(10, 0, -5, 10),
-			4: level(10, 0, -5, 10),
-			5: level(10, 0, -5, 10),
-			6: level(10, 0, -5, 10),
-			7: level(10, 0, -5, 10),
-			8: level(10, 0, -5, 10),
-			9: level(10, 0, -5, 10),
-			10: level(10, 0, -5, 10),
-			11: level(10, 0, -5, 10),
-			12: level(10, 0, -5, 10),
-			13: level(10, 0, -5, 10),
-			14: level(10, 0, -5, 10),
-			15: level(10, 0, -5, 10)
+			1: level(10, -5, 10, 'walk'),
+			2: level(10, -5, 10, 'float'),
+			3: level(10, -5, 10, 'walk'),
+			4: level(10, -5, 10, 'float'),
+			5: level(10, -5, 10, 'walk'),
+			6: level(10, -5, 10, 'float'),
+			7: level(10, -5, 10, 'walk'),
+			8: level(10, -5, 10, 'float'),
+			9: level(10, -5, 10, 'walk'),
+			10: level(10, -5, 10, 'float'),
+			11: level(10, -5, 10, 'walk'),
+			12: level(10, -5, 10, 'float'),
+			13: level(10, -5, 10, 'walk'),
+			14: level(10, -5, 10, 'float'),
+			15: level(10, -5, 10, 'walk')
 		}
 
 		self.__images = {
 			'background':	{	'ming':		pygame.image.load("resources/game/game_background_ming.png"),
-								'panel':	pygame.image.load("resources/game/game_background_panel.png")	}
+								'panel':	pygame.image.load("resources/game/game_background_panel.png")	},
+		}
 
+		self.__animations = {
+			'walk':	pyganim.PygAnimation(
+					[('resources/game/mingming_walk/mingwalk0.png', 0.07), ('resources/game/mingming_walk/mingwalk1.png', 0.07),
+					('resources/game/mingming_walk/mingwalk2.png', 0.07), ('resources/game/mingming_walk/mingwalk3.png', 0.07),
+					('resources/game/mingming_walk/mingwalk4.png', 0.07), ('resources/game/mingming_walk/mingwalk5.png', 0.07),
+					('resources/game/mingming_walk/mingwalk6.png', 0.07), ('resources/game/mingming_walk/mingwalk7.png', 0.07),
+					('resources/game/mingming_walk/mingwalk8.png', 0.07), ('resources/game/mingming_walk/mingwalk9.png', 0.07),
+					('resources/game/mingming_walk/mingwalk10.png', 0.07), ('resources/game/mingming_walk/mingwalk11.png', 0.07)]),
+
+			'float': pyganim.PygAnimation(
+					[('resources/game/mingming_float/mingfloat0.png', 0.1), ('resources/game/mingming_float/mingfloat1.png', 0.1),
+					('resources/game/mingming_float/mingfloat2.png', 0.1), ('resources/game/mingming_float/mingfloat3.png', 0.1),
+					('resources/game/mingming_float/mingfloat4.png', 0.1),('resources/game/mingming_float/mingfloat5.png', 0.1),
+					('resources/game/mingming_float/mingfloat6.png', 0.1), ('resources/game/mingming_float/mingfloat7.png', 0.1),
+					('resources/game/mingming_float/mingfloat8.png', 0.1), ('resources/game/mingming_float/mingfloat9.png', 0.1),
+					('resources/game/mingming_float/mingfloat10.png', 0.1),('resources/game/mingming_float/mingfloat11.png', 0.1),
+					('resources/game/mingming_float/mingfloat12.png', 0.1), ('resources/game/mingming_float/mingfloat13.png', 0.1),
+					('resources/game/mingming_float/mingfloat14.png', 0.1),	('resources/game/mingming_float/mingfloat15.png', 0.1),
+					('resources/game/mingming_float/mingfloat16.png', 0.1), ('resources/game/mingming_float/mingfloat17.png', 0.1),
+					('resources/game/mingming_float/mingfloat18.png', 0.1), ('resources/game/mingming_float/mingfloat19.png', 0.1),
+					('resources/game/mingming_float/mingfloat20.png', 0.1),	('resources/game/mingming_float/mingfloat21.png', 0.1),
+					('resources/game/mingming_float/mingfloat22.png', 0.1), ('resources/game/mingming_float/mingfloat23.png', 0.1),
+					('resources/game/mingming_float/mingfloat24.png', 0.1), ('resources/game/mingming_float/mingfloat25.png', 0.1),
+					('resources/game/mingming_float/mingfloat26.png', 0.1), ('resources/game/mingming_float/mingfloat27.png', 0.1),
+					('resources/game/mingming_float/mingfloat28.png', 0.1), ('resources/game/mingming_float/mingfloat29.png', 0.1),
+					('resources/game/mingming_float/mingfloat30.png', 0.1), ('resources/game/mingming_float/mingfloat31.png', 0.1),
+					('resources/game/mingming_float/mingfloat32.png', 0.1)])
 		}
 
 	def __draw_things(self):
-		self.__screen.fill(BLACK)
+		self.__screen.fill(MEDYO_BLUE)
 
-		#draw backgrounds
-		self.__screen.blit(self.__images['background']['ming'], (0,0))
+		#draw upper panel
+		self.__screen.blit(self.__images['background']['ming'], (self.__x1,-30))
+		self.__screen.blit(self.__images['background']['ming'], (self.__x2,-30))
+		self.__x1-=0.6
+		self.__x2-=0.6
+		self.__x1 = 800 if self.__x1 <= -800 else self.__x1
+		self.__x2 = 800 if self.__x2 <= -800 else self.__x2
+
+		#draw cat 
+		if self.__catbuffer != 0:
+			self.__catx = self.__catx+2 if self.__catbuffer > 0 else self.__catx-2
+			self.__catbuffer = self.__catbuffer-2 if self.__catbuffer > 0 else self.__catbuffer+2
+		caty = 50
+		self.__animations[self.__level.cat].blit(self.__screen, (self.__catx, self.__caty))
+
+		#draw lower panel
 		self.__screen.blit(self.__images['background']['panel'], (0,211))
-
-		pygame.draw.line(self.__screen, GREEN, [0, 171], [self.__timer_len, 171], 30)
 
 		pygame.draw.line(self.__screen, LIGHTGRAY, [x_pos, 212], [x_pos, 211+y_pos], 1)
 		pygame.draw.line(self.__screen, LIGHTGRAY, [2*x_pos, 212], [2*x_pos, 211+y_pos], 1)
@@ -90,6 +145,7 @@ class minggame:
 		pygame.draw.line(self.__screen, LIGHTGRAY, [0, 210+2*y_pos], [screen_width, 210+2*y_pos], 1)
 		pygame.draw.line(self.__screen, LIGHTGRAY, [799, 212], [799, 212+2*y_pos], 1)
 
+		pygame.draw.line(self.__screen, GREEN, [0, 196], [self.__timer_len, 196], 30)
 		self.__screen.blit(self.__font.render("STAGE "+str(self.__lvlnum), True, WHITE), (200,200))
 		self.__screen.blit(self.__font.render("CURRENT "+str(self.__current), True, WHITE), (250,250))
 		self.__screen.blit(self.__font.render("TIME "+str(self.__countdown), True, WHITE), (300,300))
@@ -127,6 +183,7 @@ class minggame:
 			#okay command
 			if cmd == 'PFFFT':
 				self.__current+=1
+				self.__catbuffer+=self.__catchunk
 				#win game
 				if self.__current == self.__level.win:
 					self.__game_over = self.__lvlnum+1 if self.__lvlnum < len(self.__levels) else self.__lvlnum
@@ -141,16 +198,14 @@ class minggame:
 			#timeout happened
 			elif cmd == 'TIMEOUT':
 				self.__current-=1
+				self.__catbuffer-=self.__catchunk
 				#game over
 				if self.__current == self.__level.lose:
 					self.__game_over = 0
 					self.__host.send_game_update('GAME_OVER '+str(self.__host.id))
 					self.__done = True
 				else:
-					self.__host.send_game_update('CURRENT:'+str(self.__current)+' '+str(pid))
-					#advance to new command
-					# if pid == self.__host.id:
-						# self.__reset_timer()			
+					self.__host.send_game_update('CURRENT:'+str(self.__current)+' '+str(pid))		
 
 	#process updates received by client. CLIENT ONLY
 	def __process_updates(self):
@@ -159,7 +214,9 @@ class minggame:
 			
 			#update with current status
 			if update.startswith('CURRENT:'):
+				before = self.__current
 				self.__current = int(update[8:])
+				self.__catbuffer+=self.__catchunk*(self.__current-before)
 
 				#advance to new command
 				if pid == self.__host.id:
@@ -172,7 +229,6 @@ class minggame:
 
 			#lose game
 			elif update == 'GAME_OVER':
-				print 'it\'s game over'
 				self.__game_over = 0
 				self.__done = True			
 

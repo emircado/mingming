@@ -8,6 +8,7 @@ import threading
 #FRONTEND IMPORTS
 import pygame, sys, os, string
 from pygame.locals import *
+import pyganim
 
 #TEMPORARY IMPORTS
 import Tkinter
@@ -44,6 +45,14 @@ class mingming:
 
 	#preload all images needed
 	def __prepare_resources(self):
+		self.__mingpillow = pyganim.PygAnimation(
+			[('resources/room/mingming_pillow/mingming0001.png', 0.05), ('resources/room/mingming_pillow/mingming0002.png', 0.05),
+			('resources/room/mingming_pillow/mingming0003.png', 0.05), ('resources/room/mingming_pillow/mingming0004.png', 0.05),
+			('resources/room/mingming_pillow/mingming0005.png', 0.05), ('resources/room/mingming_pillow/mingming0006.png', 0.05),
+			('resources/room/mingming_pillow/mingming0007.png', 0.05), ('resources/room/mingming_pillow/mingming0008.png', 0.05),
+			('resources/room/mingming_pillow/mingming0009.png', 0.05), ('resources/room/mingming_pillow/mingming0010.png', 0.05)])
+		# self.__mingpillow.play()
+
 		self.__images = {	
 			'about':	{	'background': 	pygame.image.load("resources/about/about_background.png")	},
 			
@@ -69,7 +78,6 @@ class mingming:
 							'btn_leave':	pygame.image.load("resources/room/room_button_leave.png").convert_alpha(),
 							'btn_kick':		pygame.image.load("resources/room/room_button_kick.png").convert_alpha(),
 							'vacant':		pygame.image.load("resources/room/room_vacant.png").convert_alpha(),
-							'user_ready':	pygame.image.load("resources/room/room_occ_ready.png").convert_alpha(),
 							'user_nready':	pygame.image.load("resources/room/room_occ_notready.png").convert_alpha()	},
 			
 			'dialog':	{	'box':			pygame.image.load("resources/dialog/dialog_kitty.png")	}
@@ -80,6 +88,7 @@ class mingming:
 			'game':	pygame.mixer.music.load('resources/sounds/music_gameproper.mp3'),
 			'room':	pygame.mixer.music.load('resources/sounds/music_waitingroom.mp3')
 			}
+
 
 	def who_you(self):
 		self.__on_display = 'whoyou'
@@ -143,7 +152,9 @@ class mingming:
 			else:
 				b = None
 				if ready == True:
-					b = self.screen.blit(self.__images['room']['user_ready'], self.__room_pcoor[i])
+					# b = self.screen.blit(self.__images['room']['user_ready'], self.__room_pcoor[i])
+					self.__mingpillow.play()
+					b = self.__mingpillow.blit(self.screen, self.__room_pcoor[i])
 				else:
 					b = self.screen.blit(self.__images['room']['user_nready'], self.__room_pcoor[i])
 				
@@ -200,7 +211,9 @@ class mingming:
 				else:
 					b = None
 					if ready == 'True':
-						b = self.screen.blit(self.__images['room']['user_ready'], self.__room_pcoor[i])
+						self.__mingpillow.play()
+						# b = self.screen.blit(self.__images['room']['user_ready'], self.__room_pcoor[i])
+						b = self.__mingpillow.blit(self.screen, self.__room_pcoor[i])
 					else:
 						b = self.screen.blit(self.__images['room']['user_nready'], self.__room_pcoor[i])
 					
@@ -361,6 +374,9 @@ class mingming:
 				self.create_game()
 				if event.type == MOUSEBUTTONDOWN:
 					for i, b in enumerate(self.__active_buttons):
+						# if b == None:
+							# b = Rect(self.__mingpillow.getRect())
+
 						if b.collidepoint(pygame.mouse.get_pos()):
 							#leave room
 							if i == 0:

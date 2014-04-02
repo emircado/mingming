@@ -151,8 +151,8 @@ class PygAnimation(object):
         if not self.visibility or self.state == STOPPED:
             return
         frameNum = findStartTime(self._startTimes, self.elapsed)
-        destSurface.blit(self.getFrame(frameNum), dest)
-
+        return destSurface.blit(self.getFrame(frameNum), dest)
+        # return destSurface
 
     def getFrame(self, frameNum):
         # Returns the pygame.Surface object of the frameNum-th frame in this
