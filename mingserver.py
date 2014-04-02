@@ -57,29 +57,6 @@ class mingserver:
 		self.__pready[0] = False if self.__pready[0] else True
 		self.__update_players()
 
-	def start_game(self):
-		print 'Attempting to start game...'
-		if len(self.__players) == 0:
-			print 'Can\'t play with only one player'
-		elif False in self.__pready:
-			print 'Not all players are ready' 
-		else:
-			self.__playing = True
-			print 'Starting game!'
-			self.__sendmsg_toall("GAME START")
-
-	def stop_game(self, means):
-		#means could either be
-		# OVER - game over for the players
-		# KILL - server left the game unexpectedly
-		print 'Ending game...'
-		self.__playing = False
-		self.__sendmsg_toall("GAME "+means)
-
-		if means == 'KILL':
-			self.leave_room()
-
-
 	def remove_player(self, clientid, means):
 		toremove = int(clientid)
 		if toremove in self.__players:
@@ -125,6 +102,36 @@ class mingserver:
 			b = False
 
 		return p, b
+
+	def start_game(self):
+		print 'Attempting to start game...'
+		if len(self.__players) == 0:
+			print 'Can\'t play with only one player'
+		elif False in self.__pready:
+			print 'Not all players are ready' 
+		else:
+			self.__playing = True
+			print 'Starting game!'
+			self.__sendmsg_toall("GAME START")
+
+	def stop_game(self, means):
+		#means could either be
+		# OVER - game over for the players
+		# KILL - server left the game unexpectedly
+		print 'Ending game...'
+		self.__playing = False
+		self.__sendmsg_toall("GAME "+means)
+
+		if means == 'KILL':
+			self.leave_room()
+
+	def send_panels(self, panels):
+		for i, cid in enumerate(self.__players):
+			addr, connection, stopper, alias = self.__players[cid]
+
+			connection.sendMessage('GAME_UPDATE PANELS '+str(panels[i+1])[1:-1].replace(' ',''))
+
+		return panels[:len(self.__players)+1]
 
 	#add command to game queue
 	def send_game_command(self, msg, pid = 0):
