@@ -3,6 +3,7 @@ import connection
 import traceback
 import threading
 import string
+import Queue
 
 import Tkinter
 import tkSimpleDialog
@@ -64,7 +65,6 @@ class mingserver:
 			print 'Not all players are ready' 
 		else:
 			self.__playing = True
-			self.__reset_command_queue()
 			print 'Starting game!'
 			self.__sendmsg_toall("GAME START")
 
@@ -75,14 +75,10 @@ class mingserver:
 		print 'Ending game...'
 		self.__playing = False
 		self.__sendmsg_toall("GAME "+means)
-		self.__reset_command_queue()
 
 		if means == 'KILL':
 			self.leave_room()
 
-	def next_game(self):
-		self.__reset_command_queue()
-		self.__sendmsg_toall("GAME NEXT")
 
 	def remove_player(self, clientid, means):
 		toremove = int(clientid)
@@ -132,18 +128,14 @@ class mingserver:
 
 	#add command to game queue
 	def send_game_command(self, msg, pid = 0):
-		self.cv_game_front.acquire()
-		self.for_game_front.append((msg, pid))
-		self.cv_game_front.notify()
-		self.cv_game_front.release()
+		self.for_game_front.put((msg, pid))
 
 	#send game update to clients
 	def send_game_update(self, msg):
 		self.__sendmsg_toall('GAME_UPDATE '+msg)
-
-	def __reset_command_queue(self):
-		self.cv_game_front = threading.Condition() 
-		self.for_game_front = []
+	
+	def reset_queue(self):
+		self.for_game_front = Queue.Queue()
 
 	#send player status to clients
 	def __update_players(self):
@@ -237,15 +229,11 @@ class mingserver:
 
 			#set to ready
 			elif message.startswith('READY'):
-				print message
 				a, pid, pready = message.split(' ')
-				print pid, pready
 				for i in range(len(self.__plist)):
 					if self.__plist[i] == int(pid):
 						self.__pready[i] = True if pready == 'True' else False
 						break
-
-				print self.__pready
 				self.__update_players()
 
 			#receive game command
@@ -254,4 +242,3 @@ class mingserver:
 				self.send_game_command(msg, int(pid))
 
 		print 'done accommodating client '+str(cid)
-

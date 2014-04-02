@@ -3,6 +3,7 @@ import connection
 import traceback
 import threading
 import string
+import Queue
 
 import Tkinter
 import tkSimpleDialog
@@ -47,24 +48,15 @@ class mingclient:
 		self.__ready = False if self.__ready == True else True
 		self.__clientconnection.sendMessage('READY '+str(self.id)+' '+str(self.__ready))
 
-	def next_game(self):
-		self.__status = 'CLIENT_INGAME'
-
 	def send_game_command(self, msg):
 		self.__clientconnection.sendMessage('GAME_CMD '+msg+' '+str(self.id))
 
-	def __reset_update_queue(self):
-		#reset game thread things
-		self.cv_game_front = threading.Condition() 
-		self.for_game_front = []
+	def reset_queue(self):
+		self.for_game_front = Queue.Queue()
 
 	def __send_game_update(self, msg, pid):
-		self.cv_game_front.acquire()
-		self.for_game_front.append((msg, pid))
-		self.cv_game_front.notify()
-		self.cv_game_front.release()
+		self.for_game_front.put((msg, pid))
 
-	#the client either leaves or is kicked out of the room
 	def exit_room(self, means = None):
 		if means == 'LEAVE':
 			print 'Leaving room...'
@@ -126,28 +118,21 @@ class mingclient:
 			elif message.startswith('SERVER_LEFT'):
 				self.exit_room('SERVER_LEFT')
 
-			#in-game status commands
+			#game status
 			elif message.startswith('GAME '):
 				#game starts
 				if message[5:] == 'START':
-					self.__reset_update_queue()
 					self.__status = 'CLIENT_INGAME'
 					print 'Game has started'
-				elif message[5:] == 'OVER':
-					self.__reset_update_queue()
-					self.__status = 'CLIENT_INROOM'
-					print 'Game over'
-
+				#server left immediately
 				elif message[5:] == 'KILL':
-					self.__reset_update_queue()
 					self.exit_room('SERVER_LEFT')
-
-				elif message[5:] == 'NEXT':
-					self.__reset_update_queue()					
-					self.__status = 'CLIENT_NEXTGAME'
-
+			#game updates
 			elif message.startswith('GAME_UPDATE'):
 				msg, pid = string.split(message[12:], ' ')
 				self.__send_game_update(msg, int(pid))
+
+				if msg == 'GAME_OVER':
+					self.__status = 'CLIENT_INROOM'
 
 		print 'done receiving messages from server'

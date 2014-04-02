@@ -30,8 +30,11 @@ class minggame:
 		#frontend things
 		self.__screen = screen
 		self.__clock = clock
-		self.__host = host
 		self.__font = pygame.font.Font(None, 35)
+
+		#backend things
+		self.__host = host
+		self.__host.reset_queue()
 
 		#initialize resources
 		self.__prepare_resources()
@@ -63,26 +66,29 @@ class minggame:
 			15: level(10, 0, -5, 10)
 		}
 
+		self.__images = {
+			'background':	{	'ming':		pygame.image.load("resources/game/game_background_ming.png"),
+								'panel':	pygame.image.load("resources/game/game_background_panel.png")	}
+
+		}
+
 	def __draw_things(self):
 		self.__screen.fill(BLACK)
 
+		#draw backgrounds
+		self.__screen.blit(self.__images['background']['ming'], (0,0))
+		self.__screen.blit(self.__images['background']['panel'], (0,211))
+
 		pygame.draw.line(self.__screen, GREEN, [0, 171], [self.__timer_len, 171], 30)
 
-		pygame.draw.rect(self.__screen, GRAY, [0, 212, x_pos, y_pos])
 		pygame.draw.line(self.__screen, LIGHTGRAY, [x_pos, 212], [x_pos, 211+y_pos], 1)
-		pygame.draw.rect(self.__screen, GRAY, [x_pos+1, 212, x_pos, y_pos])
 		pygame.draw.line(self.__screen, LIGHTGRAY, [2*x_pos, 212], [2*x_pos, 211+y_pos], 1)
-		pygame.draw.rect(self.__screen, GRAY, [2*(x_pos)+1, 212, x_pos, y_pos])
 		pygame.draw.line(self.__screen, LIGHTGRAY, [0, 212+y_pos], [screen_width, 212+y_pos], 1)
-		pygame.draw.rect(self.__screen, GRAY, [0, 213+y_pos, x_pos, y_pos])
 		pygame.draw.line(self.__screen, LIGHTGRAY, [x_pos, 213+y_pos], [x_pos, 211+2*y_pos], 1)
-		pygame.draw.rect(self.__screen, GRAY, [x_pos+1, 213+y_pos, x_pos, y_pos])
 		pygame.draw.line(self.__screen, LIGHTGRAY, [2*x_pos, 213+y_pos], [2*x_pos, 211+2*y_pos], 1)
-		pygame.draw.rect(self.__screen, GRAY, [2*(x_pos)+1, 213+y_pos, x_pos, y_pos])
 		pygame.draw.line(self.__screen, LIGHTGRAY, [0, 212], [0, 212+2*y_pos], 1)
 		pygame.draw.line(self.__screen, LIGHTGRAY, [0, 210+2*y_pos], [screen_width, 210+2*y_pos], 1)
 		pygame.draw.line(self.__screen, LIGHTGRAY, [799, 212], [799, 212+2*y_pos], 1)
-		pygame.draw.rect(self.__screen, RED, [0, 187, screen_width, 24])
 
 		self.__screen.blit(self.__font.render("STAGE "+str(self.__lvlnum), True, WHITE), (200,200))
 		self.__screen.blit(self.__font.render("CURRENT "+str(self.__current), True, WHITE), (250,250))
@@ -108,105 +114,67 @@ class minggame:
 
 			#timer up
 			if self.__countdown == 0:
-				self.__send_command('TIMEOUT')
-				# self.__
+				self.__host.send_game_command('TIMEOUT')
+				self.__reset_timer()
 
 			self.__clock.tick(self.__frame_rate)
-
-	def __send_command(self, msg):
-		self.__host.send_game_command(msg)
 
 	#process commands sent by players. SERVER ONLY
 	def __process_commands(self):
 		while not self.__done:
-			self.__host.cv_game_front.acquire()
-			#wait while queue is empty
-			while len(self.__host.for_game_front) == 0:
-				self.__host.cv_game_front.wait()
-			self.__host.cv_game_front.release()
-			
-			#process command
-			cmd, pid = self.__host.for_game_front.pop()
-			valid = None
-			if cmd == 'TIMEOUT':
-				valid = False
-			elif cmd == 'PFFFT':
-				valid = True
+			cmd, pid = self.__host.for_game_front.get()
 
 			#okay command
-			if valid == True:
+			if cmd == 'PFFFT':
 				self.__current+=1
-				self.__host.send_game_update('CURRENT++ '+str(pid))
 				#win game
 				if self.__current == self.__level.win:
-					if self.__lvlnum < 15:
-						self.__game_over = False
-						self.__host.next_game()
-					else:
-						self.__game_over = True
-						self.__host.stop_game('OVER')
+					self.__game_over = self.__lvlnum+1 if self.__lvlnum < len(self.__levels) else self.__lvlnum
+					self.__host.send_game_update('NEXT_GAME '+str(self.__host.id))
 					self.__done = True
-				#advance to new command
-				elif pid == self.__host.id:
-					self.__reset_timer()
+				else:
+					self.__host.send_game_update('CURRENT:'+str(self.__current)+' '+str(pid))
+					#advance to new command
+					if pid == self.__host.id:
+						self.__reset_timer()
 
-			#simulate timeout
-			elif valid == False:
+			#timeout happened
+			elif cmd == 'TIMEOUT':
 				self.__current-=1
-				self.__host.send_game_update('CURRENT-- '+str(pid))
 				#game over
 				if self.__current == self.__level.lose:
-					self.__game_over = True
-					self.__host.stop_game('OVER')
+					self.__game_over = 0
+					self.__host.send_game_update('GAME_OVER '+str(self.__host.id))
 					self.__done = True
-				#advance to new command
-				elif pid == self.__host.id:
-					self.__reset_timer()			
-
+				else:
+					self.__host.send_game_update('CURRENT:'+str(self.__current)+' '+str(pid))
+					#advance to new command
+					# if pid == self.__host.id:
+						# self.__reset_timer()			
 
 	#process updates received by client. CLIENT ONLY
 	def __process_updates(self):
 		while not self.__done:
-			self.__host.cv_game_front.acquire()
-			#wait while queue is empty
-			try:
-				while len(self.__host.for_game_front) == 0:
-					self.__host.cv_game_front.wait()
-				self.__host.cv_game_front.release()
-			except RuntimeError:
-				pass
+			update, pid = self.__host.for_game_front.get()
+			
+			#update with current status
+			if update.startswith('CURRENT:'):
+				self.__current = int(update[8:])
 
-			try:
-				#process update
-				update, pid = self.__host.for_game_front.pop()
-				valid = None
-				if update == 'CURRENT++':
-					valid = True
-				elif update == 'CURRENT--':
-					valid = False
+				#advance to new command
+				if pid == self.__host.id:
+					self.__reset_timer()
 
-				#okay command
-				if valid == True:
-					self.__current+=1
-					#win game
-					if self.__current == self.__level.win:
-						self.__game_over = False if self.__lvlnum < 15 else True
-						self.__done = True
-					elif pid == self.__host.id:
-						self.__reset_timer()
+			#win game
+			elif update == 'NEXT_GAME':
+				self.__game_over = self.__lvlnum+1
+				self.__done = True
 
-				#simulate timeout
-				elif valid == False:
-					self.__current-=1
-					#game over
-					if self.__current == self.__level.lose:
-						self.__game_over = True
-						self.__done = True
-					elif pid == self.__host.id:
-						self.__reset_timer()
-			except IndexError:
-				pass
-
+			#lose game
+			elif update == 'GAME_OVER':
+				print 'it\'s game over'
+				self.__game_over = 0
+				self.__done = True			
 
 	def start_game_server(self):
 		threading.Thread(target = self.__start_timer).start()
@@ -221,10 +189,9 @@ class minggame:
 			elif event.type == KEYDOWN:
 				#command message
 				if event.key == K_RETURN:
-					self.__send_command('PFFFT')
+					self.__host.send_game_command('PFFFT')
 				
 			pygame.display.update()
-			
 		return self.__game_over
 
 	def start_game_client(self):
@@ -236,14 +203,7 @@ class minggame:
 			#server closed the room
 			if self.__host.get_status() == 'CLIENT_IDLE':
 				self.__done = True
-			elif self.__host.get_status() == 'CLIENT_INROOM':
-				self.__game_over = True
-				self.__done = True
-			#win game
-			elif self.__host.get_status() == 'CLIENT_NEXTGAME':
-				self.__game_over = False
-				self.__host.next_game()
-				self.__done = True
+
 			#game proper
 			else:
 				self.__draw_things()
@@ -253,7 +213,7 @@ class minggame:
 				elif event.type == KEYDOWN:
 					#command message
 					if event.key == K_RETURN:
-						self.__send_command('PFFFT')
+						self.__host.send_game_command('PFFFT')
 
 			pygame.display.update()
 		return self.__game_over

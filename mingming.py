@@ -214,39 +214,34 @@ class mingming:
 			# self.screen.blit(self.font.render(self.__get_ip(), True, WHITE), (500,500))
 
 	def in_game(self):
-		game_over = False
-		level = 0
+		level = 1
 
 		if self.__active == 'server':
 			self.__server.start_game()
-			while not game_over:
-				print level
-				level += 1
-				game_over = minggame.minggame(self.screen, self.clock, self.__server, level).start_game_server()
+			while level > 0:
+				level = minggame.minggame(self.screen, self.clock, self.__server, level).start_game_server()
 
 			#server closed the game unexpectedly
-			if game_over == -1:
+			if level == -1:
 				del self.__server
 				self.__active = None
 				self.main_menu()
 			#lost the game
-			elif game_over == True:
+			elif level == 0:
 				self.create_game(new = False)
 				self.__server.toggle_ready()
 
 		elif self.__active == 'client':
-			while not game_over:
-				print level
-				level += 1
-				game_over = minggame.minggame(self.screen, self.clock, self.__client, level).start_game_client()
+			while level > 0:
+				level = minggame.minggame(self.screen, self.clock, self.__client, level).start_game_client()
 
 			#server closed the game unexpectedly
-			if game_over == -1:
+			if level == -1:
 				del self.__client
 				self.__active = None
 				self.main_menu()
 			#lost the game
-			elif game_over == True:
+			elif level == 0:
 				self.join_game(new = False)
 				self.__client.toggle_ready()
 
@@ -407,12 +402,6 @@ class mingming:
 								self.join_game()
 
 			pygame.display.update()
-			self.clock.tick(100)
+			self.clock.tick(60)
 		pygame.quit()
 		sys.exit()
-
-def main():
-	mingming().start_mingming()
-
-if __name__ == '__main__':
-	main()
