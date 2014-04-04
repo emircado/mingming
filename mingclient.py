@@ -129,10 +129,17 @@ class mingclient:
 					self.exit_room('SERVER_LEFT')
 			#game updates
 			elif message.startswith('GAME_UPDATE'):
-				msg, pid = string.split(message[12:], ' ')
-				self.__send_game_update(msg, pid)
+				print message
+				m = string.split(message, 'GAME_UPDATE ')[1:]
 
-				if msg == 'GAME_OVER':
-					self.__status = 'CLIENT_INROOM'
+				# print message[12:]
+				for n in m:
+					msg, pid = string.split(n, ' ')
+					self.__send_game_update(msg, pid)
+				# msg, pid = string.split(message[12:], ' ')
+				# self.__send_game_update(msg, pid)
+
+					if msg == 'GAME_OVER':
+						self.__status = 'CLIENT_INROOM'
 
 		print 'done receiving messages from server'

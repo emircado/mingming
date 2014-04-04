@@ -123,6 +123,9 @@ class minggame:
 					('resources/game/mingming_float/mingfloat28.png', 0.1), ('resources/game/mingming_float/mingfloat29.png', 0.1),
 					('resources/game/mingming_float/mingfloat30.png', 0.1), ('resources/game/mingming_float/mingfloat31.png', 0.1),
 					('resources/game/mingming_float/mingfloat32.png', 0.1)])
+		
+			# 'monster': pyganim.PygAnimation(
+			# 	[(), ()])
 		}
 
 		self.__panel_coor = (

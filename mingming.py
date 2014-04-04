@@ -152,7 +152,7 @@ class mingming:
 				else:
 					b = self.screen.blit(self.__images['room']['user_nready'], self.__room_pcoor[i])
 				
-				if i == 0:asdfasdf
+				if i == 0:
 					more_buttons.append(b) #BUTTON 2: SERVER CAT
 
 				#can kick clients

@@ -48,9 +48,9 @@ _images = {
 				0:	pygame.image.load('resources/game/buttons/b1n.png'),
 				1:	pygame.image.load('resources/game/buttons/b2n.png'),
 				2:	pygame.image.load('resources/game/buttons/b3n.png'),
-				5:	pygame.image.load('resources/game/buttons/b1y.png'),
-				6:	pygame.image.load('resources/game/buttons/b2y.png'),
-				7:	pygame.image.load('resources/game/buttons/b3y.png')		},
+				3:	pygame.image.load('resources/game/buttons/b1y.png'),
+				4:	pygame.image.load('resources/game/buttons/b2y.png'),
+				5:	pygame.image.load('resources/game/buttons/b3y.png')		},
 
 	BTN_2: {	'dim1': (40, 100),
 				'dim0': (40, 35),
@@ -119,15 +119,15 @@ class mingswitch:
 		return cmd
 
 _switches = [
-	mingswitch(0, 'Samting1', BUTTON, ('Press Samting1',)),
-	mingswitch(1, 'Samting2', BUTTON, ('Press Samting2',)),
-	mingswitch(2, 'Samting3', BUTTON, ('Press Samting3',)),
+	mingswitch(0, 'Poke', BTN_2, ('Poke Mingming!!!', 'Unpoke Mingming!!!')),
+	mingswitch(1, 'Food', BTN_2, ('Feed fish', 'Feed milk')),
+	mingswitch(2, 'Yarn', BTN_3, ('Play with yarn 1', 'Play with yarn 2', 'Play with yarn 3')),
 	mingswitch(3, 'Bills', BUTTON , ('Pay Bills',)),			#FINAL
 	mingswitch(4, 'Cat Trainer', BTN_5, ('Cat Trainer to 1', 'Cat Tranier to 2', 'Cat Tranier to 3', 'Cat Tranier to 4', 'Cat Tranier to 5')),	#FINAL
 	mingswitch(5, 'Compliment', BUTTON, ('Give Compliment',)),	#FINAL
-	mingswitch(6, 'Massage', BUTTON, ('Massage Me',)),
-	mingswitch(7, 'Meditate', BUTTON, ('Meditate Now',)),
-	mingswitch(8, 'Rock out to music', BUTTON, ('Rock on',)),
+	mingswitch(6, 'Massage', BUTTON, ('Massage Me',)),	#FINAL
+	mingswitch(7, 'Meditate', BUTTON, ('Meditate Now',)),	#FINAL
+	mingswitch(8, 'Grooming', BTN_3, ('Grooming to Level 1', 'Grooming to Level 2', 'Grooming to Level 3')),
 	mingswitch(9, 'Teleport', BUTTON, ('Teleport here',)),
 	mingswitch(10, 'Challenger', BUTTON, ('Challenge Me',)),
 	mingswitch(11, 'Masticate', BUTTON, ('Masticate you',)),
