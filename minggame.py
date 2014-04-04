@@ -47,6 +47,7 @@ class minggame:
 		self.__level = self.__levels[self.__lvlnum]
 		self.__current = self.__level.start
 		self.__animations[self.__level.cat].play()
+		self.__animations['monster'].play()
 
 		#ming panel
 		self.__mypanel = None
@@ -122,10 +123,26 @@ class minggame:
 					('resources/game/mingming_float/mingfloat26.png', 0.1), ('resources/game/mingming_float/mingfloat27.png', 0.1),
 					('resources/game/mingming_float/mingfloat28.png', 0.1), ('resources/game/mingming_float/mingfloat29.png', 0.1),
 					('resources/game/mingming_float/mingfloat30.png', 0.1), ('resources/game/mingming_float/mingfloat31.png', 0.1),
-					('resources/game/mingming_float/mingfloat32.png', 0.1)])
+					('resources/game/mingming_float/mingfloat32.png', 0.1)]),
 		
-			# 'monster': pyganim.PygAnimation(
-			# 	[(), ()])
+			'monster': pyganim.PygAnimation(
+				[('resources/game/monster/monster0001.png', 0.07), ('resources/game/monster/monster0002.png', 0.07),
+				('resources/game/monster/monster0003.png', 0.07), ('resources/game/monster/monster0004.png', 0.07),
+				('resources/game/monster/monster0005.png', 0.07), ('resources/game/monster/monster0006.png', 0.07),
+				('resources/game/monster/monster0007.png', 0.07), ('resources/game/monster/monster0008.png', 0.07),
+				('resources/game/monster/monster0009.png', 0.07), ('resources/game/monster/monster0010.png', 0.07),
+				('resources/game/monster/monster0011.png', 0.07), ('resources/game/monster/monster0012.png', 0.07),
+				('resources/game/monster/monster0013.png', 0.07), ('resources/game/monster/monster0014.png', 0.07),
+				('resources/game/monster/monster0015.png', 0.07), ('resources/game/monster/monster0016.png', 0.07),
+				('resources/game/monster/monster0017.png', 0.07), ('resources/game/monster/monster0018.png', 0.07),
+				('resources/game/monster/monster0019.png', 0.07), ('resources/game/monster/monster0020.png', 0.07),
+				('resources/game/monster/monster0021.png', 0.07), ('resources/game/monster/monster0022.png', 0.07),
+				('resources/game/monster/monster0023.png', 0.07), ('resources/game/monster/monster0024.png', 0.07),
+				('resources/game/monster/monster0025.png', 0.07), ('resources/game/monster/monster0026.png', 0.07),
+				('resources/game/monster/monster0027.png', 0.07), ('resources/game/monster/monster0028.png', 0.07),
+				('resources/game/monster/monster0029.png', 0.07), ('resources/game/monster/monster0030.png', 0.07),
+				('resources/game/monster/monster0031.png', 0.07), ('resources/game/monster/monster0032.png', 0.07),
+				('resources/game/monster/monster0033.png', 0.07), ('resources/game/monster/monster0034.png', 0.07)])
 		}
 
 		self.__panel_coor = (
@@ -143,6 +160,9 @@ class minggame:
 		self.__x2-=0.6
 		self.__x1 = 800 if self.__x1 <= -800 else self.__x1
 		self.__x2 = 800 if self.__x2 <= -800 else self.__x2
+
+		#draw monster
+		self.__animations['monster'].blit(self.__screen, (-90, 0))
 
 		#draw cat 
 		if self.__catbuffer != 0:
@@ -169,9 +189,9 @@ class minggame:
 		pygame.draw.line(self.__screen, LIGHTGRAY, [799, 212], [799, 212+2*y_pos], 1)
 
 		pygame.draw.line(self.__screen, GREEN, [0, 196], [self.__timer_len, 196], 30)
-		self.__screen.blit(self.__font.render("STAGE "+str(self.__lvlnum), True, WHITE), (200,200))
-		self.__screen.blit(self.__font.render("CURRENT "+str(self.__current), True, WHITE), (250,250))
-		self.__screen.blit(self.__font.render("CMD "+str(self.__cmd_word), True, WHITE), (350, 350))
+		self.__screen.blit(self.__font.render("STAGE "+str(self.__lvlnum), True, BLACK), (680,10))
+		# self.__screen.blit(self.__font.render("CURRENT "+str(self.__current), True, WHITE), (250,250))
+		self.__screen.blit(self.__font.render("CMD "+str(self.__cmd_word), True, RED), (0, 185))
 
 	def __reset_timer(self):
 		#timer things

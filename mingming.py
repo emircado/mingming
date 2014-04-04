@@ -39,9 +39,9 @@ class mingming:
 		self.__active = None
 
 		#play music
-		# pygame.mixer.init()
-		# pygame.mixer.music.load('resources/sounds/music_meowmeow.mp3')
-		# pygame.mixer.music.play(-1)
+		pygame.mixer.init()
+		pygame.mixer.music.load('resources/sounds/music_meowmeow.mp3')
+		pygame.mixer.music.play(-1)
 
 	#preload all images needed
 	def __prepare_resources(self):
@@ -249,7 +249,7 @@ class mingming:
 
 		elif self.__active == None:
 			self.main_menu()
-			
+
 	def __get_ip(self):
 		return socket.gethostbyname(socket.gethostname())
 
