@@ -51,7 +51,6 @@ class mingming:
 			('resources/room/mingming_pillow/mingming0005.png', 0.05), ('resources/room/mingming_pillow/mingming0006.png', 0.05),
 			('resources/room/mingming_pillow/mingming0007.png', 0.05), ('resources/room/mingming_pillow/mingming0008.png', 0.05),
 			('resources/room/mingming_pillow/mingming0009.png', 0.05), ('resources/room/mingming_pillow/mingming0010.png', 0.05)])
-		# self.__mingpillow.play()
 
 		self.__images = {	
 			'about':	{	'background': 	pygame.image.load("resources/about/about_background.png")	},
@@ -100,8 +99,6 @@ class mingming:
 		name = self.font.render(string.join(self.__alias, "").replace(',','').replace(':',''), True, BLACK)
 		self.screen.blit(name, (430, 285))
 
-		# self.screen.blit(self.__images['dialog']['box'], (0,0))
-
 	def main_menu(self):
 		self.__on_display = 'main'
 
@@ -124,10 +121,9 @@ class mingming:
 
 		if new == True:
 			print 'Creating game...'
-			port = 8080
-			# Tkinter.Tk().withdraw()
-			# port = int(tkSimpleDialog.askstring('Input', 'Enter port number').strip())
-			self.__server = mingserver.mingserver(self.__get_ip(), port, string.join(self.__alias,""))
+			port = string.join(self.__ipport,"")
+			self.__ipport = self.__get_ip()+':'+port
+			self.__server = mingserver.mingserver(self.__get_ip(), int(port), string.join(self.__alias,""))
 			self.__myid = self.__server.id
 			self.__active = 'server'
 
@@ -170,21 +166,17 @@ class mingming:
 				self.screen.blit(self.font.render(alias, True, BLACK), self.__room_pcoor[i])
 		
 		self.__active_buttons = self.__active_buttons + tuple(more_buttons)
-		self.screen.blit(self.font.render(self.__get_ip(), True, WHITE), (500,500))
+		self.screen.blit(self.font.render(self.__ipport, True, WHITE), (500,500))
 
 	def join_game(self, new = False):
 		self.__on_display = 'join'
 
 		if new == True:
-			# Tkinter.Tk().withdraw()
-			# host = tkSimpleDialog.askstring('Input', 'Enter IP Address').strip()
-			# Tkinter.Tk().withdraw()
-			# port = int(tkSimpleDialog.askstring('Input', 'Enter port number').strip())
-			host = self.__get_ip()
-			port = 8080
+			self.__ipport = string.join(self.__ipport, "")
+			host, port = string.split(self.__ipport, ':')
 
 			print 'joining game...'
-			self.__client = mingclient.mingclient(host, port, self.__alias)
+			self.__client = mingclient.mingclient(host, int(port), self.__alias)
 			self.__myid = self.__client.id
 			self.__active = 'client'
 
@@ -221,7 +213,7 @@ class mingming:
 					self.screen.blit(self.font.render(alias, True, BLACK), self.__room_pcoor[i])
 			
 			self.__active_buttons = self.__active_buttons + tuple(more_buttons)
-			# self.screen.blit(self.font.render(self.__get_ip(), True, WHITE), (500,500))
+			self.screen.blit(self.font.render(self.__ipport, True, WHITE), (500,500))
 
 	def in_game(self):
 		level = 1
@@ -260,6 +252,28 @@ class mingming:
 			
 	def __get_ip(self):
 		return socket.gethostbyname(socket.gethostname())
+
+	def ask_host(self):
+		self.__on_display = 'askhost'
+
+		self.screen.blit(self.__images['dialog']['box'], (800/3,200))
+		self.screen.blit(self.font.render('Enter port number', True, BLACK), (285,220))
+		self.screen.blit(self.font.render(string.join(self.__ipport, ""), True, BLACK), (300,260))
+		self.__active_buttons = (
+			self.screen.blit(self.__images['arrows']['button_next'], (631,491)),
+			self.screen.blit(self.__images['arrows']['button_prev'], (431,491))
+		)
+
+	def ask_join(self):
+		self.__on_display = 'askjoin'
+
+		self.screen.blit(self.__images['dialog']['box'], (800/3,200))
+		self.screen.blit(self.font.render('Enter IP:Port', True, BLACK), (285,220))
+		self.screen.blit(self.font.render(string.join(self.__ipport, ""), True, BLACK), (300,260))
+		self.__active_buttons = (
+			self.screen.blit(self.__images['arrows']['button_next'], (631,491)),
+			self.screen.blit(self.__images['arrows']['button_prev'], (431,491))
+		)
 
 	def about(self):
 		self.__on_display = 'about'
@@ -328,9 +342,11 @@ class mingming:
 					for i, b in enumerate(self.__active_buttons):
 						if b.collidepoint(pygame.mouse.get_pos()):
 							if i == 0:
-								self.create_game(new = True)
+								self.__ipport = []
+								self.ask_host()
 							elif i == 1:
-								self.join_game(new = True)
+								self.__ipport = []
+								self.ask_join()
 							elif i == 2:
 								self.about()
 							elif i == 3:
@@ -366,6 +382,53 @@ class mingming:
 							if i == 0:
 								self.howto(1)
 			
+			elif self.__on_display == 'askhost':
+				if event.type == MOUSEBUTTONDOWN:
+					for i, b in enumerate(self.__active_buttons):
+						if b.collidepoint(pygame.mouse.get_pos()):
+							#submit input port
+							if i == 0:
+								self.create_game(new = True)
+							#cancel
+							elif i == 1:
+								self.main_menu()
+				#input field
+				elif event.type == KEYDOWN:
+					if event.key == K_BACKSPACE:
+						self.__ipport = self.__ipport[:-1]
+						self.ask_host()
+					elif event.key == K_RETURN:
+						self.create_game(new = True)
+					else:
+						#20 characters limit
+						if len(self.__ipport) < 30:
+							self.__ipport.append(event.unicode)
+						self.ask_host()
+
+			elif self.__on_display == 'askjoin':
+				if event.type == MOUSEBUTTONDOWN:
+					for i, b in enumerate(self.__active_buttons):
+						if b.collidepoint(pygame.mouse.get_pos()):
+							#submit input IP:Port
+							if i == 0:
+								self.join_game(new = True)
+							#cancel
+							elif i == 1:
+								self.main_menu()
+
+				#input field
+				elif event.type == KEYDOWN:
+					if event.key == K_BACKSPACE:
+						self.__ipport = self.__ipport[:-1]
+						self.ask_join()
+					elif event.key == K_RETURN:
+						self.join_game(new = True)
+					else:
+						#20 characters limit
+						if len(self.__ipport) < 30:
+							self.__ipport.append(event.unicode)
+						self.ask_join()
+
 			#HOST GAME SCREEN EVENTS
 			elif self.__on_display == 'host':
 				self.create_game()

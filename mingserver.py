@@ -126,12 +126,13 @@ class mingserver:
 			self.leave_room()
 
 	def send_panels(self, panels):
+		plist = {self.id: panels[0]}
 		for i, cid in enumerate(self.__players):
 			addr, connection, stopper, alias = self.__players[cid]
 
-			connection.sendMessage('GAME_UPDATE PANELS '+str(panels[i+1])[1:-1].replace(' ',''))
-
-		return panels[:len(self.__players)+1]
+			plist[cid] = panels[i+1]
+			connection.sendMessage('GAME_UPDATE PANELS '+str(plist[cid])[1:-1].replace(' ',''))
+		return plist
 
 	#add command to game queue
 	def send_game_command(self, msg, pid = 0):

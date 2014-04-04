@@ -67,23 +67,28 @@ class minggame:
 		self.__caty = 50 if self.__level.cat == 'walk' else 30
 		self.__catbuffer = 0
 
+		#command to do
+		self.__cmd_todo = None
+		self.__cmd_word = ''
+		self.__cmd_todolist = {}
+
 	def __prepare_resources(self):
 		self.__levels = {
-			1: level(10, -5, 10, 'walk'),
-			2: level(10, -5, 10, 'float'),
-			3: level(10, -5, 10, 'walk'),
-			4: level(10, -5, 10, 'float'),
-			5: level(10, -5, 10, 'walk'),
-			6: level(10, -5, 10, 'float'),
-			7: level(10, -5, 10, 'walk'),
-			8: level(10, -5, 10, 'float'),
-			9: level(10, -5, 10, 'walk'),
-			10: level(10, -5, 10, 'float'),
-			11: level(10, -5, 10, 'walk'),
-			12: level(10, -5, 10, 'float'),
-			13: level(10, -5, 10, 'walk'),
-			14: level(10, -5, 10, 'float'),
-			15: level(10, -5, 10, 'walk')
+			1: level(10, -5, 8, 'walk'),
+			2: level(10, -4, 9, 'float'),
+			3: level(10, -3, 10, 'walk'),
+			4: level(9, -5, 8, 'float'),
+			5: level(9, -4, 9, 'walk'),
+			6: level(9, -3, 10, 'float'),
+			7: level(8, -5, 8, 'walk'),
+			8: level(8, -4, 9, 'float'),
+			9: level(8, -3, 10, 'walk'),
+			10: level(7, -5, 8, 'float'),
+			11: level(7, -4, 9, 'walk'),
+			12: level(7, -3, 10, 'float'),
+			13: level(6, -5, 8, 'walk'),
+			14: level(6, -4, 9, 'float'),
+			15: level(6, -3, 10, 'walk')
 		}
 
 		self.__images = {
@@ -103,10 +108,10 @@ class minggame:
 			'float': pyganim.PygAnimation(
 					[('resources/game/mingming_float/mingfloat0.png', 0.1), ('resources/game/mingming_float/mingfloat1.png', 0.1),
 					('resources/game/mingming_float/mingfloat2.png', 0.1), ('resources/game/mingming_float/mingfloat3.png', 0.1),
-					('resources/game/mingming_float/mingfloat4.png', 0.1),('resources/game/mingming_float/mingfloat5.png', 0.1),
+					('resources/game/mingming_float/mingfloat4.png', 0.1), ('resources/game/mingming_float/mingfloat5.png', 0.1),
 					('resources/game/mingming_float/mingfloat6.png', 0.1), ('resources/game/mingming_float/mingfloat7.png', 0.1),
 					('resources/game/mingming_float/mingfloat8.png', 0.1), ('resources/game/mingming_float/mingfloat9.png', 0.1),
-					('resources/game/mingming_float/mingfloat10.png', 0.1),('resources/game/mingming_float/mingfloat11.png', 0.1),
+					('resources/game/mingming_float/mingfloat10.png', 0.1), ('resources/game/mingming_float/mingfloat11.png', 0.1),
 					('resources/game/mingming_float/mingfloat12.png', 0.1), ('resources/game/mingming_float/mingfloat13.png', 0.1),
 					('resources/game/mingming_float/mingfloat14.png', 0.1),	('resources/game/mingming_float/mingfloat15.png', 0.1),
 					('resources/game/mingming_float/mingfloat16.png', 0.1), ('resources/game/mingming_float/mingfloat17.png', 0.1),
@@ -120,13 +125,16 @@ class minggame:
 					('resources/game/mingming_float/mingfloat32.png', 0.1)])
 		}
 
+		self.__panel_coor = (
+			((0, 211), (x_pos, 211+y_pos)), ((x_pos, 211), (2*x_pos, 211+y_pos)), ((2*x_pos, 211), (800, 211+y_pos)),
+			((0, 211+y_pos), (x_pos, 211+(2*y_pos))), ((x_pos, 211+y_pos), (2*x_pos, 211+(2*y_pos))), ((2*x_pos, 211+y_pos), (800, 600))
+		)
+
 	def __draw_things(self):
 		self.__screen.fill(MEDYO_BLUE)
 
 		#draw upper panel
-		# if self.__x1 <= 800:
 		self.__screen.blit(self.__images['background']['ming'], (self.__x1,-30))
-		# if self.__x2 <= 800:
 		self.__screen.blit(self.__images['background']['ming'], (self.__x2,-30))
 		self.__x1-=0.6
 		self.__x2-=0.6
@@ -143,6 +151,11 @@ class minggame:
 		#draw lower panel
 		self.__screen.blit(self.__images['background']['panel'], (0,211))
 
+		#draw panel
+		if self.__mypanel != None:
+			for i, switch in enumerate(self.__mypanel):
+				switch.draw_switch(self.__screen, self.__font, self.__panel_coor[i])
+
 		pygame.draw.line(self.__screen, LIGHTGRAY, [x_pos, 212], [x_pos, 211+y_pos], 1)
 		pygame.draw.line(self.__screen, LIGHTGRAY, [2*x_pos, 212], [2*x_pos, 211+y_pos], 1)
 		pygame.draw.line(self.__screen, LIGHTGRAY, [0, 212+y_pos], [screen_width, 212+y_pos], 1)
@@ -155,7 +168,7 @@ class minggame:
 		pygame.draw.line(self.__screen, GREEN, [0, 196], [self.__timer_len, 196], 30)
 		self.__screen.blit(self.__font.render("STAGE "+str(self.__lvlnum), True, WHITE), (200,200))
 		self.__screen.blit(self.__font.render("CURRENT "+str(self.__current), True, WHITE), (250,250))
-		self.__screen.blit(self.__font.render("TIME "+str(self.__countdown), True, WHITE), (300,300))
+		self.__screen.blit(self.__font.render("CMD "+str(self.__cmd_word), True, WHITE), (350, 350))
 
 	def __reset_timer(self):
 		#timer things
@@ -188,19 +201,22 @@ class minggame:
 			cmd, pid = self.__host.for_game_front.get()
 
 			#okay command
-			if cmd == 'PFFFT':
-				self.__current+=1
-				self.__catbuffer+=self.__catchunk
-				#win game
-				if self.__current == self.__level.win:
-					self.__game_over = self.__lvlnum+1 if self.__lvlnum < len(self.__levels) else self.__lvlnum
-					self.__host.send_game_update('NEXT_GAME '+str(self.__host.id))
-					self.__done = True
-				else:
-					self.__host.send_game_update('CURRENT:'+str(self.__current)+' '+str(pid))
-					#advance to new command
-					if pid == self.__host.id:
-						self.__reset_timer()
+			if cmd.startswith('COMMAND:'):
+				print cmd
+				for cid in self.__cmd_todolist:
+					print 'match '+self.__cmd_todolist[cid]
+					if self.__cmd_todolist[cid] == cmd[8:]:
+						print 'found '+str(cid)
+						self.__current+=1
+						self.__catbuffer+=self.__catchunk
+						#win game
+						if self.__current == self.__level.win:
+							self.__game_over = self.__lvlnum+1 if self.__lvlnum < len(self.__levels) else self.__lvlnum
+							self.__host.send_game_update('NEXT_GAME '+str(self.__host.id))
+							self.__done = True
+						else:
+							#generate next command for player
+							self.__send_next_command(cid)
 
 			#timeout happened
 			elif cmd == 'TIMEOUT':
@@ -212,7 +228,7 @@ class minggame:
 					self.__host.send_game_update('GAME_OVER '+str(self.__host.id))
 					self.__done = True
 				else:
-					self.__host.send_game_update('CURRENT:'+str(self.__current)+' '+str(pid))
+					self.__send_next_command(pid)
 
 	#process updates received by client. CLIENT ONLY
 	def __process_updates(self):
@@ -226,7 +242,11 @@ class minggame:
 				self.__catbuffer+=self.__catchunk*(self.__current-before)
 
 				#advance to new command
-				if int(pid) == self.__host.id:
+				cid, cmd_num, state_num = string.split(pid, ':')
+				# if cmd_num+':'+state_num == self.__cmd_todo:
+				if int(cid) == self.__host.id:
+					self.__cmd_todo = cmd_num+':'+state_num
+					self.__cmd_word = mingpanel.get_cmdword(self.__cmd_todo)
 					self.__reset_timer()
 
 			#win game
@@ -241,15 +261,39 @@ class minggame:
 
 			#receive panels
 			elif update == 'PANELS':
-				self.__mypanel = [int(i) for i in string.split(pid, ',')]
-				print self.__mypanel
+				self.__mypanel = mingpanel.get_switches([int(i) for i in string.split(pid, ',')])	#get own panel
+
+	# SERVER ONLY
+	def __send_next_command(self, cid):
+		#ask for a command from mingpanel from list of panels of player
+		cmd_num, state_num = mingpanel.get_command(self.__panel_list, cid)
+		cmd_str = str(cmd_num)+':'+str(state_num)
+
+		#if server owns the command
+		if self.__host.id == cid:
+			self.__cmd_todo = cmd_str
+			self.__cmd_word = mingpanel.get_cmdword(self.__cmd_todo)
+			self.__reset_timer()
+
+		self.__cmd_todolist[cid] = cmd_str		
+		self.__host.send_game_update('CURRENT:'+str(self.__current)+' '+str(cid)+':'+cmd_str)
 
 	def start_game_server(self):
 		threading.Thread(target = self.__start_timer).start()
 		threading.Thread(target = self.__process_commands).start()
 		self.__panel_list = self.__host.send_panels(mingpanel.generate_panels()) 	#distribute panels to players
-		self.__mypanel = self.__panel_list[0]
-		print self.__mypanel
+		self.__mypanel = mingpanel.get_switches(self.__panel_list[self.__host.id])	#get own panel
+
+		#send server commands
+		cmd_num, state_num = mingpanel.get_command(self.__panel_list, self.__host.id)
+		self.__cmd_todo = str(cmd_num)+':'+str(state_num)
+		self.__cmd_word = mingpanel.get_cmdword(self.__cmd_todo)
+		self.__cmd_todolist[self.__host.id] = self.__cmd_todo
+
+		#send command to players
+		for cid in self.__panel_list:
+			if cid != self.__host.id:
+				self.__send_next_command(cid)
 
 		while not self.__done:
 			event = pygame.event.poll()
@@ -257,10 +301,13 @@ class minggame:
 			if event.type == QUIT:
 				self.__host.stop_game('KILL')
 				self.__done = True
-			elif event.type == KEYDOWN:
-				#command message
-				if event.key == K_RETURN:
-					self.__host.send_game_command('PFFFT')
+
+			elif event.type == MOUSEBUTTONDOWN:
+				for b in self.__mypanel:
+					a = b.process_event(pygame.mouse.get_pos())
+					if a != None:
+						self.__host.send_game_command(a)
+						break
 				
 			pygame.display.update()
 		return self.__game_over
@@ -281,10 +328,13 @@ class minggame:
 				if event.type == QUIT:
 					self.__host.exit_room('LEAVE')
 					self.__done = True
-				elif event.type == KEYDOWN:
-					#command message
-					if event.key == K_RETURN:
-						self.__host.send_game_command('PFFFT')
+
+				elif event.type == MOUSEBUTTONDOWN:
+					for b in self.__mypanel:
+						a = b.process_event(pygame.mouse.get_pos())
+						if a != None:
+							self.__host.send_game_command(a)
+							break
 
 			pygame.display.update()
 		return self.__game_over
