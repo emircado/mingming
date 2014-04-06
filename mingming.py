@@ -68,8 +68,20 @@ class mingming:
 
 			'whoyou':	{	'background':	pygame.image.load("resources/whoyou/whoyou_background.png")	},
 
-			'howto':	{	'page1':		pygame.image.load("resources/howto/howto_page1.png"),
-							'page2':		pygame.image.load("resources/howto/howto_page2.png")	},
+			'howto':	{	'host':		[	pygame.image.load("resources/howto/howto_host_page1.png"),
+											pygame.image.load("resources/howto/howto_host_page2.png"),
+											pygame.image.load("resources/howto/howto_host_page3.png")	],
+							'join':		[	pygame.image.load("resources/howto/howto_join_page1.png"),
+											pygame.image.load("resources/howto/howto_join_page2.png")	],
+							'game':		[	pygame.image.load("resources/howto/howto_game_page1.png"),
+											pygame.image.load("resources/howto/howto_game_page2.png")	],
+							'host_btn':		pygame.image.load("resources/howto/howto_host.png"),
+							'host_btnn':	pygame.image.load("resources/howto/howto_host_n.png"),
+							'join_btn':		pygame.image.load("resources/howto/howto_join.png"),
+							'join_btnn':	pygame.image.load("resources/howto/howto_join_n.png"),
+							'game_btn':		pygame.image.load("resources/howto/howto_game.png"),
+							'game_btnn':	pygame.image.load("resources/howto/howto_game_n.png"),
+							'home':			pygame.image.load("resources/howto/howto_home.png")			},
 			
 			'room':		{	'background':	pygame.image.load("resources/room/room_background.png"),
 							'btn_start':	pygame.image.load("resources/room/room_button_start.png").convert_alpha(),
@@ -195,7 +207,6 @@ class mingming:
 			self.__active_buttons = (
 				self.screen.blit(self.__images['room']['btn_leave'], (181,491)),)	#BUTTON 0: LEAVE
 
-			# print self.players
 			for i, (pid, alias, ready) in enumerate(self.players):
 				if alias == 'None':
 					self.screen.blit(self.__images['room']['vacant'], self.__room_pcoor[i])
@@ -284,19 +295,38 @@ class mingming:
 		self.screen.blit(self.__images['about']['background'], (0,0))
 		self.__active_buttons = (self.screen.blit(self.__images['arrows']['button_prev'], (631,491)),)
 
-	def howto(self, page):
-		self.__on_display = 'howto'+str(page)
+	def howto(self):
+		self.__on_display = 'howto'
 		
 		self.screen.fill(BLACK)
-		self.screen.blit(self.__images['howto']['page'+str(page)], (0,0))
+		self.screen.blit(self.__images['howto'][self.__howtopage[0]][self.__howtopage[1]-1], (0,0))
 
-		if page == 1:
-			self.__active_buttons = (
-				self.screen.blit(self.__images['arrows']['button_prev'], (381,491)),
-				self.screen.blit(self.__images['arrows']['button_next'], (631,491)))
-		if page == 2:
-			self.__active_buttons = (self.screen.blit(self.__images['arrows']['button_prev'], (381,491)),)
-			self.screen.blit(self.__images['arrows']['button_dnext'], (631,491))
+		#host, join, and play buttons
+		self.__active_buttons = (self.screen.blit(self.__images['howto']['home'], (325,495)),)	#BUTTON 0: HOME
+		more_buttons = [['host_btnn', (50,100)], ['join_btnn', (50,200)], ['game_btnn', (50,300)]]
+
+		if self.__howtopage[0] == 'host':
+			more_buttons[0][0] = 'host_btn'		#BUTTON 1: HOST
+		elif self.__howtopage[0] == 'join':
+			more_buttons[1][0] = 'join_btn'		#BUTTON 2: JOIN
+		elif self.__howtopage[0] == 'game':
+			more_buttons[2][0] = 'game_btn'		#BUTTON 3: PLAY
+		
+		more_buttons = [self.screen.blit(self.__images['howto'][b[0]], b[1]) for b in more_buttons]
+
+		#prev button
+		if self.__howtopage[1] == 1:
+			more_buttons.append(self.screen.blit(self.__images['arrows']['button_dprev'], (20,495)))
+		else:
+			more_buttons.append(self.screen.blit(self.__images['arrows']['button_prev'], (20,495)))
+		
+		#next button
+		if self.__howtopage[1] == len(self.__images['howto'][self.__howtopage[0]]):
+			more_buttons.append(self.screen.blit(self.__images['arrows']['button_dnext'], (641,495)))
+		else:
+			more_buttons.append(self.screen.blit(self.__images['arrows']['button_next'], (641,495)))	
+
+		self.__active_buttons = self.__active_buttons + tuple(more_buttons)
 
 	def start_mingming(self):
 		self.who_you()
@@ -352,7 +382,8 @@ class mingming:
 							elif i == 2:
 								self.about()
 							elif i == 3:
-								self.howto(1)
+								self.__howtopage = ['host', 1]
+								self.howto()
 			
 			#ABOUT SCREEN EVENTS
 			elif self.__on_display == 'about':
@@ -363,27 +394,37 @@ class mingming:
 							if i == 0:
 								self.main_menu()
 
-			#HOW TO PLAY SCREEN EVENTS, page1
-			elif self.__on_display == 'howto1':
+			#HOW TO SCREEN EVENTS
+			elif self.__on_display == 'howto':
 				if event.type == MOUSEBUTTONDOWN:
 					for i, b in enumerate(self.__active_buttons):
 						if b.collidepoint(pygame.mouse.get_pos()):
 							#return back to main menu
 							if i == 0:
+								self.__howtopage = [None, 0]
 								self.main_menu()
-							#proceed to next page
+							#go to how to host
 							elif i == 1:
-								self.howto(2)
-
-			#HOW TO PLAY SCREEN EVENTS, page 2
-			elif self.__on_display == 'howto2':
-				if event.type == MOUSEBUTTONDOWN:
-					for i, b in enumerate(self.__active_buttons):
-						if b.collidepoint(pygame.mouse.get_pos()):
-							#return to previous page
-							if i == 0:
-								self.howto(1)
+								self.__howtopage = ['host', 1]
+								self.howto()
+							#go to how to join
+							elif i == 2:
+								self.__howtopage = ['join', 1]
+								self.howto()
+							#go to how to play
+							elif i == 3:
+								self.__howtopage = ['game', 1]
+								self.howto()
+							#go to prev page
+							elif i == 4:
+								self.__howtopage[1] = self.__howtopage[1]-1 if self.__howtopage[1] > 1 else self.__howtopage[1]
+								self.howto()
+							#go to next page
+							elif i == 5:
+								self.__howtopage[1] = self.__howtopage[1]+1 if self.__howtopage[1] < len(self.__images['howto'][self.__howtopage[0]]) else self.__howtopage[1]
+								self.howto()
 			
+			#ASK FOR PORT NUMBER INPUT FIELD
 			elif self.__on_display == 'askhost':
 				if event.type == MOUSEBUTTONDOWN:
 					for i, b in enumerate(self.__active_buttons):
@@ -407,6 +448,7 @@ class mingming:
 							self.__ipport.append(event.unicode)
 						self.ask_host()
 
+			#ASK FOR IP AND PORT INPUT FIELD
 			elif self.__on_display == 'askjoin':
 				if event.type == MOUSEBUTTONDOWN:
 					for i, b in enumerate(self.__active_buttons):
