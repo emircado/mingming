@@ -190,8 +190,7 @@ class minggame:
 
 		pygame.draw.line(self.__screen, GREEN, [0, 196], [self.__timer_len, 196], 30)
 		self.__screen.blit(self.__font.render("STAGE "+str(self.__lvlnum), True, BLACK), (680,10))
-		# self.__screen.blit(self.__font.render("CURRENT "+str(self.__current), True, WHITE), (250,250))
-		self.__screen.blit(self.__font.render("CMD "+str(self.__cmd_word), True, RED), (0, 185))
+		self.__screen.blit(self.__font.render(str(self.__cmd_word), True, RED), (0, 185))
 
 	def __reset_timer(self):
 		#timer things
@@ -225,11 +224,8 @@ class minggame:
 
 			#okay command
 			if cmd.startswith('COMMAND:'):
-				print cmd
 				for cid in self.__cmd_todolist:
-					print 'match '+self.__cmd_todolist[cid]
 					if self.__cmd_todolist[cid] == cmd[8:]:
-						print 'found '+str(cid)
 						self.__current+=1
 						self.__catbuffer+=self.__catchunk
 						#win game
@@ -266,7 +262,6 @@ class minggame:
 
 				#advance to new command
 				cid, cmd_num, state_num = string.split(pid, ':')
-				# if cmd_num+':'+state_num == self.__cmd_todo:
 				if int(cid) == self.__host.id:
 					self.__cmd_todo = cmd_num+':'+state_num
 					self.__cmd_word = mingpanel.get_cmdword(self.__cmd_todo)

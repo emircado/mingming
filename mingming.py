@@ -79,7 +79,9 @@ class mingming:
 							'vacant':		pygame.image.load("resources/room/room_vacant.png").convert_alpha(),
 							'user_nready':	pygame.image.load("resources/room/room_occ_notready.png").convert_alpha()	},
 			
-			'dialog':	{	'box':			pygame.image.load("resources/dialog/dialog_kitty.png")	}
+			'dialog':	{	'box':			pygame.image.load("resources/dialog/dialog_kitty.png"),
+							'enter':		pygame.image.load("resources/dialog/dialog_enter.png"),
+							'cancel':		pygame.image.load("resources/dialog/dialog_cancel.png")	}
 			}
 
 		self.__sounds = {
@@ -260,8 +262,8 @@ class mingming:
 		self.screen.blit(self.font.render('Enter port number', True, BLACK), (285,220))
 		self.screen.blit(self.font.render(string.join(self.__ipport, ""), True, BLACK), (300,260))
 		self.__active_buttons = (
-			self.screen.blit(self.__images['arrows']['button_next'], (631,491)),
-			self.screen.blit(self.__images['arrows']['button_prev'], (431,491))
+			self.screen.blit(self.__images['dialog']['enter'], (497,360)),
+			self.screen.blit(self.__images['dialog']['cancel'], (350,360))
 		)
 
 	def ask_join(self):
@@ -271,8 +273,8 @@ class mingming:
 		self.screen.blit(self.font.render('Enter IP:Port', True, BLACK), (285,220))
 		self.screen.blit(self.font.render(string.join(self.__ipport, ""), True, BLACK), (300,260))
 		self.__active_buttons = (
-			self.screen.blit(self.__images['arrows']['button_next'], (631,491)),
-			self.screen.blit(self.__images['arrows']['button_prev'], (431,491))
+			self.screen.blit(self.__images['dialog']['enter'], (497,360)),
+			self.screen.blit(self.__images['dialog']['cancel'], (350,360))
 		)
 
 	def about(self):
