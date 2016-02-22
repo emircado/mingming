@@ -18,3 +18,5 @@ Players should be connected to the same network to locate each other. Pyganim wa
 ### Setup
 
 To launch the game, simply run `main.py` (by double-clicking on it or through the terminal). Make sure the requirements are already installed. Refer to the game guide found in the main menu on how to host or join a game.
+
+Enjoy!
