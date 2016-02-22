@@ -1,6 +1,6 @@
 # Ming Ming
 
-This project was created as a requirement for the CS 145 Computer Networks course of the Department of Computer Science at the University of the Philippines, Diliman.
+This project was created as a requirement for the CS 145 Computer Networks course of the Department of Computer Science of the University of the Philippines, Diliman.
 
 The project showcases how end users in the same network communicate through network protocol/s, with one acting as a server and the others as clients.
 
@@ -15,7 +15,6 @@ This application runs on:
 
 Players should be connected to the same network to locate each other. Pyganim was also used for the animation but is already included in this repo.
 
-
 ### Setup
 
-To launch the game, simply run `main.py` (by double-clicking on it or through the terminal). Make sure the needed software are already installed. Refer to the game guide found in the main menu on how to host or join a game.
+To launch the game, simply run `main.py` (by double-clicking on it or through the terminal). Make sure the requirements are already installed. Refer to the game guide found in the main menu on how to host or join a game.
