@@ -14,3 +14,8 @@ This application runs on:
 2. Pygame 1.9.2a0 (32-bit) [http://www.pygame.org/download.shtml]
 
 Players should be connected to the same network to locate each other. Pyganim was also used for the animation but is already included in this repo.
+
+
+### Setup
+
+To launch the game, simply run `main.py` (by double-clicking on it or through the terminal). Make sure the needed software are already installed. Refer to the game guide found in the main menu on how to host or join a game.
